@@ -163,16 +163,34 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-gray-800">Bonjour</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
+    <div className="dashboard-page space-y-6">
+      <section className="dashboard-hero">
+        <div className="dashboard-hero__content">
+          <div>
+            <span className="dashboard-kicker">Pilotage reseau</span>
+            <h2 className="dashboard-title">Bonjour</h2>
+            <p className="dashboard-subtitle mt-1">
             Voici un résumé de l'activité du système.
           </p>
+          <div className="dashboard-summary-grid">
+            <div className="dashboard-summary-pill">
+              <span>Secteurs suivis</span>
+              <strong>{stats?.total_secteurs ?? gisSectors.length ?? '-'}</strong>
+            </div>
+            <div className="dashboard-summary-pill">
+              <span>GIS actifs</span>
+              <strong>{gisSectors.length}</strong>
+            </div>
+            <div className="dashboard-summary-pill">
+              <span>Alertes ouvertes</span>
+              <strong>{activeGisAlerts}</strong>
+            </div>
+          </div>
+        </div>
         </div>
         {canExport && (
-          <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
+          <div className="dashboard-hero__actions">
+            <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
             <Button
               variant="danger"
               className="w-full sm:w-auto"
@@ -191,11 +209,12 @@ export default function Dashboard() {
               <FileSpreadsheet size={14} />
               Exporter Excel
             </Button>
+            </div>
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="dashboard-stats-grid grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Clients total"
           value={stats?.total_clients ?? '—'}
@@ -226,10 +245,10 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="dashboard-panel bg-white rounded-xl border border-gray-100 overflow-hidden">
         <div className="flex flex-col gap-3 px-5 py-4 border-b border-gray-50 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+            <span className="dashboard-section-icon">
               <MapPinned size={18} />
             </span>
             <div>
@@ -240,7 +259,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex flex-col gap-3 md:items-end">
-            <div className="relative w-full md:w-72">
+            <div className="dashboard-search relative w-full md:w-72">
               <Search
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -270,7 +289,7 @@ export default function Dashboard() {
         </div>
 
         {mapSearch && (
-          <div className="flex gap-2 overflow-x-auto border-b border-gray-50 px-5 py-3">
+          <div className="dashboard-chip-row flex gap-2 overflow-x-auto border-b border-gray-50 px-5 py-3">
             {filteredGisSectors.length === 0 ? (
               <span className="text-xs text-gray-400">Aucun secteur trouvé.</span>
             ) : (
@@ -279,10 +298,8 @@ export default function Dashboard() {
                   key={secteur.id ?? secteur.nom_secteur}
                   type="button"
                   onClick={() => setSelectedSector(secteur)}
-                  className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                    selectedSector?.id === secteur.id
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:text-emerald-700'
+                  className={`dashboard-chip ${
+                    selectedSector?.id === secteur.id ? 'is-active' : ''
                   }`}
                 >
                   {secteur.nom_secteur}
@@ -292,9 +309,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="relative h-[320px] bg-slate-100 sm:h-[380px] lg:h-[460px]">
+        <div className="dashboard-map-shell relative h-[320px] bg-slate-100 sm:h-[380px] lg:h-[460px]">
           {gisSectors.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-gray-400">
+            <div className="dashboard-empty-state flex h-full items-center justify-center text-sm text-gray-400">
               Aucune coordonnée GIS disponible.
             </div>
           ) : (
@@ -302,11 +319,26 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setIsSatellite((current) => !current)}
-                className="absolute right-3 top-3 z-[1000] inline-flex items-center gap-2 rounded-lg border border-white/70 bg-white/95 px-3 py-2 text-xs font-semibold text-gray-700 shadow-lg backdrop-blur hover:bg-white"
+                className="dashboard-map-toggle absolute right-3 top-3 z-[1000] inline-flex items-center gap-2 rounded-lg border border-white/70 bg-white/95 px-3 py-2 text-xs font-semibold text-gray-700 shadow-lg backdrop-blur hover:bg-white"
               >
                 <Layers size={14} />
-                {isSatellite ? 'Standard View' : 'Satellite View'}
+                {isSatellite ? 'Vue standard' : 'Vue satellite'}
               </button>
+
+              {selectedSector && (
+                <div className="dashboard-map-focus">
+                  <p className="dashboard-map-focus__label">Secteur cible</p>
+                  <h4>{selectedSector.nom_secteur}</h4>
+                  <div className="dashboard-map-focus__meta">
+                    <span>{selectedSector.meters_count} compteurs</span>
+                    <span>
+                      {selectedSector.pannes_ouvertes_count} panne
+                      {selectedSector.pannes_ouvertes_count > 1 ? 's' : ''} ouverte
+                      {selectedSector.pannes_ouvertes_count > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <MapContainer
                 center={TAZA_CENTER}
@@ -351,19 +383,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100">
+      <div className="dashboard-panel dashboard-table-shell bg-white rounded-xl border border-gray-100">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-          <div>
+          <div className="flex items-start gap-3">
+            <span className="dashboard-section-icon dashboard-section-icon--warm">
+              <AlertTriangle size={18} />
+            </span>
+            <div>
             <h3 className="text-sm font-semibold text-gray-800">Pannes récentes</h3>
             <p className="text-xs text-gray-400 mt-0.5">Les 5 dernières pannes signalées</p>
+            </div>
           </div>
-          <a href="/pannes" className="text-xs text-blue-600 hover:underline font-medium">
+          <a href="/pannes" className="dashboard-table-link text-xs text-blue-600 hover:underline font-medium">
             Voir tout
           </a>
         </div>
 
         {pannes.length === 0 ? (
-          <div className="text-center py-12 text-sm text-gray-400">
+          <div className="dashboard-empty-state text-center py-12 text-sm text-gray-400">
             Aucune panne enregistrée.
           </div>
         ) : (
