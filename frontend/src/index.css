@@ -29,6 +29,10 @@
   background: #dc2626;
 }
 
+.gis-marker--amber {
+  background: #d97706;
+}
+
 .gis-marker--pulse::before {
   content: "";
   position: absolute;

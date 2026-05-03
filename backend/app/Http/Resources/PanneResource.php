@@ -21,6 +21,8 @@ class PanneResource extends JsonResource
             'anomalie' => $this->anomalie instanceof PanneAnomalie ? $this->anomalie->value : $this->anomalie,
             'status' => $status,
             'statut' => $status === PanneStatus::Resolved->value ? 'résolue' : 'ouverte',
+            'assigned_to' => $this->assigned_to,
+            'assigned_operator' => new UserResource($this->whenLoaded('assignedOperator')),
             'description' => null,
             'compteur' => new CompteurResource($this->whenLoaded('compteur')),
             'reparations' => ReparationResource::collection($this->whenLoaded('reparations')),

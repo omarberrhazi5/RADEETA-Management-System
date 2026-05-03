@@ -15,6 +15,7 @@ class Client extends Model
         'police',
         'nom',
         'prenom',
+        'cin',
         'telephone',
         'adresse',
         'abonne',
@@ -30,6 +31,11 @@ class Client extends Model
     public function compteurs(): HasMany
     {
         return $this->hasMany(Compteur::class, 'id_client');
+    }
+
+    public function factures(): HasMany
+    {
+        return $this->hasMany(Facture::class);
     }
 
     protected static function booted(): void

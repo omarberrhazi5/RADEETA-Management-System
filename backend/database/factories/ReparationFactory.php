@@ -19,7 +19,7 @@ class ReparationFactory extends Factory
     {
         return [
             'id_panne' => Panne::factory(),
-            'id_plombier' => User::factory()->state(['role' => UserRole::Technician]),
+            'id_plombier' => User::factory()->state(['role' => UserRole::Operator]),
             'date_reparation' => fake()->dateTimeBetween('-3 months', 'now')->format('Y-m-d'),
             'description' => fake()->randomElement([
                 'Remplacement du joint et verification de l etancheite.',

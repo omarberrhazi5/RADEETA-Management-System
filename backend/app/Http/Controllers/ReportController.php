@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\PanneAnomalie;
 use App\Enums\PanneStatus;
 use App\Exports\ClientsCompteursExport;
+use App\Exports\PaymentsSummaryExport;
+use App\Models\Facture;
 use App\Models\Panne;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
@@ -45,6 +47,39 @@ class ReportController extends Controller
     public function clientsExcel(): BinaryFileResponse
     {
         return Excel::download(new ClientsCompteursExport(), 'clients-compteurs.xlsx');
+    }
+
+    public function invoicesPdf(Request $request): Response
+    {
+        $period = $this->periodFromRequest($request);
+
+        $factures = Facture::with('client', 'compteur.secteur', 'paiements')
+            ->whereBetween('generated_at', [$period->startOfMonth(), $period->endOfMonth()])
+            ->orderBy('generated_at')
+            ->get();
+
+        $pdf = Pdf::loadView('reports.invoices-month', [
+            'factures' => $factures,
+            'period' => $period,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('factures-'.$period->format('Y-m').'.pdf');
+    }
+
+    public function paymentsExcel(Request $request): BinaryFileResponse
+    {
+        $period = $this->periodFromRequest($request);
+
+        return Excel::download(new PaymentsSummaryExport($period), 'paiements-'.$period->format('Y-m').'.xlsx');
+    }
+
+    private function periodFromRequest(Request $request): CarbonImmutable
+    {
+        $month = (int) $request->integer('month', now()->month);
+        $year = (int) $request->integer('year', now()->year);
+
+        return CarbonImmutable::create($year, $month, 1);
     }
 
     private function statusLabels(): array

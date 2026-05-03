@@ -3,24 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PanneStatus;
+use App\Enums\UserRole;
 use App\Http\Requests\ReparationRequest;
 use App\Http\Resources\ReparationResource;
 use App\Models\Panne;
 use App\Models\Reparation;
+use App\Services\NotificationService;
+use App\Support\OperatorAccess;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 
 class ReparationController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) request('limit', 10), 500);
 
-        return ReparationResource::collection(Reparation::with('panne.compteur.client', 'panne.compteur.secteur', 'plombier')->paginate($limit));
+        $query = Reparation::with('panne.compteur.client', 'panne.compteur.secteur', 'plombier');
+
+        if (OperatorAccess::isOperator($request->user())) {
+            OperatorAccess::scopeReparations($query, $request->user());
+        }
+
+        return ReparationResource::collection($query->paginate($limit));
     }
 
-    public function store(ReparationRequest $request): JsonResponse
+    public function store(ReparationRequest $request, NotificationService $notifications): JsonResponse
     {
         $validated = $request->validated();
 
@@ -31,16 +41,22 @@ class ReparationController extends Controller
             return $reparation;
         });
 
+        $notifications->repairCompleted($reparation);
+
         return (new ReparationResource($reparation->load('panne.compteur.client', 'panne.compteur.secteur', 'plombier')))->response()->setStatusCode(201);
     }
 
-    public function show(Reparation $reparation): ReparationResource
+    public function show(Request $request, Reparation $reparation): ReparationResource
     {
+        $this->authorizeOperatorReparationAccess($request, $reparation);
+
         return new ReparationResource($reparation->load('panne.compteur.client', 'panne.compteur.secteur', 'plombier'));
     }
 
-    public function update(ReparationRequest $request, Reparation $reparation): JsonResponse
+    public function update(ReparationRequest $request, Reparation $reparation, NotificationService $notifications): JsonResponse
     {
+        $this->authorizeOperatorReparationAccess($request, $reparation);
+
         $validated = $request->validated();
 
         DB::transaction(function () use ($reparation, $validated): void {
@@ -53,6 +69,8 @@ class ReparationController extends Controller
                 $this->reopenPanneIfUnrepaired($oldPanneId);
             }
         });
+
+        $notifications->repairCompleted($reparation);
 
         return (new ReparationResource($reparation->load('panne.compteur.client', 'panne.compteur.secteur', 'plombier')))->response();
     }
@@ -77,5 +95,27 @@ class ReparationController extends Controller
         if (! $hasActiveRepair) {
             Panne::whereKey($panneId)->update(['status' => PanneStatus::Open->value]);
         }
+    }
+
+    private function isOperator(Request $request): bool
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        return $value === UserRole::Operator->value;
+    }
+
+    private function authorizeOperatorReparationAccess(Request $request, Reparation $reparation): void
+    {
+        $query = Reparation::whereKey($reparation->id);
+        if (OperatorAccess::isOperator($request->user())) {
+            OperatorAccess::scopeReparations($query, $request->user());
+        }
+
+        abort_if(
+            OperatorAccess::isOperator($request->user()) && ! $query->exists(),
+            403,
+            'Forbidden'
+        );
     }
 }

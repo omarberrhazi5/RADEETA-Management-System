@@ -23,6 +23,7 @@ class Panne extends Model
         'date_panne',
         'anomalie',
         'status',
+        'assigned_to',
     ];
 
     protected function casts(): array
@@ -42,6 +43,11 @@ class Panne extends Model
     public function reparations(): HasMany
     {
         return $this->hasMany(Reparation::class, 'id_panne');
+    }
+
+    public function assignedOperator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     protected static function booted(): void

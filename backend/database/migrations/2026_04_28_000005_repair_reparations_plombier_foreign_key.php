@@ -9,22 +9,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (DB::connection()->getDriverName() !== 'mysql') {
+        if (
+            DB::connection()->getDriverName() !== 'mysql'
+            || ! Schema::hasTable('users')
+            || ! Schema::hasTable('reparations')
+            || ! Schema::hasColumn('reparations', 'id_plombier')
+        ) {
             return;
         }
 
-        $foreignKeys = collect(DB::select("
-            SELECT CONSTRAINT_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'reparations'
-              AND COLUMN_NAME = 'id_plombier'
-              AND REFERENCED_TABLE_NAME IS NOT NULL
-        "));
+        $this->dropIdPlombierForeignKeys();
 
-        foreach ($foreignKeys as $foreignKey) {
-            DB::statement("ALTER TABLE reparations DROP FOREIGN KEY {$foreignKey->CONSTRAINT_NAME}");
-        }
+        DB::statement('ALTER TABLE reparations MODIFY id_plombier BIGINT UNSIGNED NULL');
 
         DB::table('reparations')
             ->whereNotNull('id_plombier')
@@ -41,10 +37,35 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (
+            DB::connection()->getDriverName() !== 'mysql'
+            || ! Schema::hasTable('reparations')
+            || ! Schema::hasColumn('reparations', 'id_plombier')
+        ) {
+            return;
+        }
+
+        $this->dropIdPlombierForeignKeys();
+    }
+
+    private function dropIdPlombierForeignKeys(): void
+    {
         if (DB::connection()->getDriverName() !== 'mysql') {
             return;
         }
 
-        DB::statement('ALTER TABLE reparations DROP FOREIGN KEY reparations_id_plombier_users_foreign');
+        $foreignKeys = DB::select("
+            SELECT CONSTRAINT_NAME
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'reparations'
+              AND COLUMN_NAME = 'id_plombier'
+              AND REFERENCED_TABLE_NAME IS NOT NULL
+        ");
+
+        foreach ($foreignKeys as $foreignKey) {
+            $constraint = str_replace('`', '``', $foreignKey->CONSTRAINT_NAME);
+            DB::statement("ALTER TABLE reparations DROP FOREIGN KEY `{$constraint}`");
+        }
     }
 };

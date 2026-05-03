@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\CompteurResource;
 use App\Models\Compteur;
+use App\Support\OperatorAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -11,11 +12,16 @@ use Illuminate\Validation\Rule;
 
 class CompteurController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) request('limit', 10), 500);
+        $query = Compteur::with('client', 'secteur', 'pannes');
 
-        return CompteurResource::collection(Compteur::with('client', 'secteur', 'pannes')->paginate($limit));
+        if (OperatorAccess::isOperator($request->user())) {
+            OperatorAccess::scopeCompteurs($query, $request->user());
+        }
+
+        return CompteurResource::collection($query->paginate($limit));
     }
 
     public function store(Request $request): JsonResponse
@@ -34,8 +40,14 @@ class CompteurController extends Controller
         return (new CompteurResource($compteur->load('client', 'secteur', 'pannes')))->response()->setStatusCode(201);
     }
 
-    public function show(Compteur $compteur): CompteurResource
+    public function show(Request $request, Compteur $compteur): CompteurResource
     {
+        abort_if(
+            OperatorAccess::isOperator($request->user()) && ! OperatorAccess::canAccessCompteur($compteur, $request->user()),
+            403,
+            'Forbidden'
+        );
+
         return new CompteurResource($compteur->load('client', 'secteur', 'pannes'));
     }
 

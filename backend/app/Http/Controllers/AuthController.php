@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -27,11 +28,17 @@ class AuthController extends Controller
             ]);
         }
 
+        $role = $user->role instanceof UserRole ? $user->role->value : $user->role;
+
+        if ($role === UserRole::Developer->value && app()->isProduction()) {
+            return response()->json(['message' => 'Developer access is disabled in production.'], 403);
+        }
+
         $token = $user->createToken($validated['device_name'] ?? 'api-token')->plainTextToken;
 
         return response()->json([
             'token' => $token,
-            'role' => $user->role instanceof \App\Enums\UserRole ? $user->role->value : $user->role,
+            'role' => $role,
             'user' => new UserResource($user),
         ]);
     }

@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\PanneAnomalie;
 use App\Enums\PanneStatus;
+use App\Enums\UserRole;
 use App\Http\Resources\PanneResource;
-use App\Models\Notification;
 use App\Models\Panne;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -14,11 +15,15 @@ use Illuminate\Validation\Rule;
 
 class PanneController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) request('limit', 10), 500);
 
-        $query = Panne::with('compteur.client', 'compteur.secteur', 'reparations.plombier');
+        $query = Panne::with('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator');
+
+        if ($this->isOperator($request)) {
+            $query->where('assigned_to', $request->user()->id);
+        }
 
         if (request('sort') === 'recent') {
             $query->latest('date_panne');
@@ -27,7 +32,7 @@ class PanneController extends Controller
         return PanneResource::collection($query->paginate($limit));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, NotificationService $notifications): JsonResponse
     {
         $this->normalizeFrontendPayload($request);
 
@@ -36,31 +41,31 @@ class PanneController extends Controller
             'date_panne' => ['required', 'date'],
             'anomalie' => ['required', Rule::enum(PanneAnomalie::class)],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
+            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where('role', UserRole::Operator->value)],
         ]);
+
+        if ($this->isOperator($request)) {
+            $validated['assigned_to'] = $request->user()->id;
+        }
 
         $panne = Panne::create($validated);
-        $panne->load('compteur.client', 'compteur.secteur');
+        $panne->load('compteur.client', 'compteur.secteur', 'assignedOperator');
 
-        Notification::create([
-            'title' => 'Nouvelle panne signalée',
-            'message' => sprintf(
-                'Panne #%d signalée sur le compteur %s%s.',
-                $panne->id,
-                $panne->compteur?->cadran ?? 'inconnu',
-                $panne->compteur?->secteur ? ' - '.$panne->compteur->secteur->nom_secteur : ''
-            ),
-            'type' => 'panne',
-        ]);
+        if ($panne->assigned_to) {
+            $notifications->panneAssigned($panne);
+        }
 
-        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier')))->response()->setStatusCode(201);
+        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator')))->response()->setStatusCode(201);
     }
 
-    public function show(Panne $panne): PanneResource
+    public function show(Request $request, Panne $panne): PanneResource
     {
-        return new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier'));
+        $this->authorizeOperatorPanneAccess($request, $panne);
+
+        return new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator'));
     }
 
-    public function update(Request $request, Panne $panne): JsonResponse
+    public function update(Request $request, Panne $panne, NotificationService $notifications): JsonResponse
     {
         $this->normalizeFrontendPayload($request);
 
@@ -69,11 +74,23 @@ class PanneController extends Controller
             'date_panne' => ['sometimes', 'required', 'date'],
             'anomalie' => ['sometimes', 'required', Rule::enum(PanneAnomalie::class)],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
+            'assigned_to' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('role', UserRole::Operator->value)],
         ]);
 
+        $this->authorizeOperatorPanneAccess($request, $panne);
+
+        if ($this->isOperator($request)) {
+            $validated = array_intersect_key($validated, array_flip(['status']));
+        }
+
+        $oldAssignedTo = $panne->assigned_to;
         $panne->update($validated);
 
-        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier')))->response();
+        if (array_key_exists('assigned_to', $validated) && $validated['assigned_to'] && (int) $validated['assigned_to'] !== (int) $oldAssignedTo) {
+            $notifications->panneAssigned($panne->refresh());
+        }
+
+        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator')))->response();
     }
 
     public function destroy(Panne $panne): JsonResponse
@@ -101,6 +118,23 @@ class PanneController extends Controller
         if ($mapped !== []) {
             $request->merge($mapped);
         }
+    }
+
+    private function isOperator(Request $request): bool
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        return $value === UserRole::Operator->value;
+    }
+
+    private function authorizeOperatorPanneAccess(Request $request, Panne $panne): void
+    {
+        abort_if(
+            $this->isOperator($request) && (int) $panne->assigned_to !== (int) $request->user()->id,
+            403,
+            'Forbidden'
+        );
     }
 
     private function normalizeAnomalie(?string $anomalie): ?string

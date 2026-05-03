@@ -25,7 +25,7 @@ class ClientApiTest extends TestCase
 
     public function test_non_privileged_user_cannot_mutate_clients(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Technician]));
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Viewer]));
 
         $this->postJson('/api/clients', [
             'police' => 'POL-900001',

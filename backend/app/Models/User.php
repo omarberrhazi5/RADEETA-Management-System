@@ -59,4 +59,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Reparation::class, 'id_plombier');
     }
+
+    public function assignedPannes(): HasMany
+    {
+        return $this->hasMany(Panne::class, 'assigned_to');
+    }
 }

@@ -1,157 +1,88 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogIn, Eye, EyeOff, Loader } from 'lucide-react';
-import api from '../api/axios';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, login } = useAuth();
+  const [form, setForm] = useState({ identifiant: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const [form, setForm]         = useState({ identifiant: '', password: '' });
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
-  function handleChange(e) {
+  async function submit(event) {
+    event.preventDefault();
     setError('');
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    // Basic validation
-    if (!form.identifiant.trim() || !form.password.trim()) {
-      setError('Veuillez remplir tous les champs.');
+    if (!form.identifiant || !form.password) {
+      setError('Enter your login and password.');
       return;
     }
 
     try {
       setLoading(true);
-      const response = await api.post('/login', form);
-
-      // Save token to localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user_role', response.data.role ?? response.data.user?.role ?? '');
-      localStorage.setItem('auth_user', JSON.stringify(response.data.user ?? null));
-
-      const role = response.data.role ?? response.data.user?.role;
-      navigate(role === 'technician' ? '/pannes' : '/dashboard');
-
+      const target = await login(form);
+      navigate(location.state?.from?.pathname ?? target, { replace: true });
     } catch (err) {
-      if (err.response?.status === 401) {
-        setError('Identifiant ou mot de passe incorrect.');
-      } else {
-        setError('Erreur de connexion. Vérifiez votre serveur Laravel.');
-      }
+      setError(err.response?.data?.message ?? 'Invalid credentials or unavailable API.');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
-
-        {/* Logo / Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl mb-4">
-            <span className="text-white font-bold text-lg">R</span>
+        <div className="mb-7 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-blue-700 text-lg font-bold text-white">
+            SRM
           </div>
-          <h1 className="text-xl font-semibold text-gray-800">RADEE-TA</h1>
-          <p className="text-sm text-gray-400 mt-1">Gestion de Secteur</p>
+          <h1 className="text-xl font-semibold text-gray-900">SRM Taza/Region</h1>
+          <p className="mt-1 text-sm text-gray-500">Secure operations portal</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm">
+        <form onSubmit={submit} className="space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-          <h2 className="text-base font-semibold text-gray-800 mb-1">
-            Connexion
-          </h2>
-          <p className="text-xs text-gray-400 mb-6">
-            Entrez vos identifiants pour accéder au tableau de bord.
-          </p>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">Email or identifier</label>
+            <input
+              name="identifiant"
+              value={form.identifiant}
+              onChange={(event) => setForm((current) => ({ ...current, identifiant: event.target.value }))}
+              autoComplete="username"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              placeholder="admin"
+            />
+          </div>
 
-          {/* Error message */}
-          {error && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg px-3 py-2.5 mb-5">
-              <span className="mt-0.5">⚠</span>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Identifiant field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                Identifiant
-              </label>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
+            <div className="relative">
               <input
-                type="text"
-                name="identifiant"
-                value={form.identifiant}
-                onChange={handleChange}
-                placeholder="Votre identifiant"
-                autoComplete="username"
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                autoComplete="current-password"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 pr-10 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                placeholder="password"
               />
+              <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="Toggle password visibility">
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
+          </div>
 
-            {/* Password field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  className="w-full px-3 py-2.5 pr-10 text-sm border border-gray-200 rounded-lg text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition"
-                >
-                  {showPass
-                    ? <EyeOff size={15} />
-                    : <Eye size={15} />
-                  }
-                </button>
-              </div>
-            </div>
-
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium py-2.5 rounded-lg transition-colors duration-150 mt-2"
-            >
-              {loading ? (
-                <>
-                  <Loader size={15} className="animate-spin" />
-                  Connexion en cours...
-                </>
-              ) : (
-                <>
-                  <LogIn size={15} />
-                  Se connecter
-                </>
-              )}
-            </button>
-
-          </form>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-300 mt-6">
-          RADEE-TA © {new Date().getFullYear()}
-        </p>
-
+          <button type="submit" disabled={loading} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800 disabled:opacity-60">
+            <LogIn size={16} />
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -25,14 +25,15 @@ return new class extends Migration
         });
 
         if (DB::connection()->getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE users MODIFY role VARCHAR(50) NOT NULL DEFAULT 'technician'");
+            DB::statement("ALTER TABLE users MODIFY role VARCHAR(50) NOT NULL DEFAULT 'viewer'");
         }
 
-        DB::table('users')->where('role', 'plombier')->update(['role' => 'technician']);
+        DB::table('users')->where('role', 'plombier')->update(['role' => 'operator']);
+        DB::table('users')->where('role', 'technician')->update(['role' => 'operator']);
         DB::table('users')->where('role', 'responsable')->update(['role' => 'manager']);
         DB::table('users')
-            ->whereNotIn('role', ['admin', 'manager', 'technician'])
-            ->update(['role' => 'technician']);
+            ->whereNotIn('role', ['super_admin', 'admin', 'manager', 'operator', 'viewer', 'developer'])
+            ->update(['role' => 'viewer']);
 
         DB::table('users')->orderBy('id')->each(function (object $user): void {
             $fallbackName = $user->name ?: 'User '.$user->id;

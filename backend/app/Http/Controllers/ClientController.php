@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ClientResource;
 use App\Models\Client;
+use App\Support\OperatorAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -11,11 +12,16 @@ use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) request('limit', 10), 500);
+        $query = Client::with('compteurs.secteur', 'compteurs.pannes');
 
-        return ClientResource::collection(Client::with('compteurs.secteur', 'compteurs.pannes')->paginate($limit));
+        if (OperatorAccess::isOperator($request->user())) {
+            OperatorAccess::scopeClients($query, $request->user());
+        }
+
+        return ClientResource::collection($query->paginate($limit));
     }
 
     public function store(Request $request): JsonResponse
@@ -38,8 +44,19 @@ class ClientController extends Controller
         return (new ClientResource($client->load('compteurs')))->response()->setStatusCode(201);
     }
 
-    public function show(Client $client): ClientResource
+    public function show(Request $request, Client $client): ClientResource
     {
+        $visibleToOperator = Client::whereKey($client->id);
+        if (OperatorAccess::isOperator($request->user())) {
+            OperatorAccess::scopeClients($visibleToOperator, $request->user());
+        }
+
+        abort_if(
+            OperatorAccess::isOperator($request->user()) && ! $visibleToOperator->exists(),
+            403,
+            'Forbidden'
+        );
+
         return new ClientResource($client->load('compteurs.secteur', 'compteurs.pannes'));
     }
 

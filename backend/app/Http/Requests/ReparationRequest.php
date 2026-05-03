@@ -14,7 +14,23 @@ class ReparationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        if (! $this->isOperator()) {
+            return true;
+        }
+
+        $routeReparation = $this->route('reparation');
+        $panneId = $this->filled('id_panne') ? $this->integer('id_panne') : $routeReparation?->id_panne;
+
+        return $panneId
+            ? Panne::whereKey($panneId)->where('assigned_to', $this->user()->id)->exists()
+            : true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->isOperator()) {
+            $this->merge(['id_plombier' => $this->user()->id]);
+        }
     }
 
     public function rules(): array
@@ -26,7 +42,7 @@ class ReparationRequest extends FormRequest
             'id_plombier' => [
                 $required,
                 'required',
-                Rule::exists('users', 'id')->where('role', UserRole::Technician->value),
+                Rule::exists('users', 'id')->where('role', UserRole::Operator->value),
             ],
             'date_reparation' => [$required, 'required', 'date'],
             'description' => ['nullable', 'string', 'max:5000'],
@@ -71,5 +87,13 @@ class ReparationRequest extends FormRequest
                 $validator->errors()->add('id_panne', 'This fault already has an active repair.');
             }
         });
+    }
+
+    private function isOperator(): bool
+    {
+        $role = $this->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        return $value === UserRole::Operator->value;
     }
 }

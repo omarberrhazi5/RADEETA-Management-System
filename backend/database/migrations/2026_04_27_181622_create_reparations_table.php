@@ -14,10 +14,15 @@ return new class extends Migration
         Schema::create('reparations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_panne')->constrained('pannes')->cascadeOnDelete();
-            $table->foreignId('id_plombier')->constrained('users')->restrictOnDelete();
+            $table->unsignedBigInteger('id_plombier')->nullable();
             $table->date('date_reparation');
             $table->text('description')->nullable();
             $table->timestamps();
+
+            $table->foreign('id_plombier', 'reparations_id_plombier_users_foreign')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
         });
     }
 

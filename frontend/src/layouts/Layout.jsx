@@ -4,24 +4,23 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 export default function Layout() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden bg-gray-50">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-
-      {isSidebarOpen && (
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && (
         <button
           type="button"
-          aria-label="Fermer le menu"
-          onClick={() => setIsSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-[1px] md:hidden"
+          aria-label="Close navigation"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-gray-900/35 md:hidden"
         />
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
+      <div className="min-h-screen md:pl-64">
+        <Topbar onMenuClick={() => setSidebarOpen(true)} />
+        <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

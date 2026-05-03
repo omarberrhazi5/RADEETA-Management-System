@@ -43,6 +43,16 @@ class Compteur extends Model
         return $this->hasMany(Panne::class, 'id_compteur');
     }
 
+    public function releves(): HasMany
+    {
+        return $this->hasMany(Releve::class);
+    }
+
+    public function factures(): HasMany
+    {
+        return $this->hasMany(Facture::class);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function (Compteur $compteur): void {
