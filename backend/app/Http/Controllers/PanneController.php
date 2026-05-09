@@ -19,7 +19,7 @@ class PanneController extends Controller
     {
         $limit = min((int) request('limit', 10), 500);
 
-        $query = Panne::with('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator');
+        $query = Panne::with('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator');
 
         if ($this->isOperator($request)) {
             $query->where('assigned_to', $request->user()->id);
@@ -41,7 +41,7 @@ class PanneController extends Controller
             'date_panne' => ['required', 'date'],
             'anomalie' => ['required', Rule::enum(PanneAnomalie::class)],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
-            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where('role', UserRole::Operator->value)],
+            'assigned_to' => ['nullable', Rule::exists('users', 'id')->where('role', UserRole::Technician->value)],
         ]);
 
         if ($this->isOperator($request)) {
@@ -55,14 +55,14 @@ class PanneController extends Controller
             $notifications->panneAssigned($panne);
         }
 
-        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator')))->response()->setStatusCode(201);
+        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, Panne $panne): PanneResource
     {
         $this->authorizeOperatorPanneAccess($request, $panne);
 
-        return new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator'));
+        return new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator'));
     }
 
     public function update(Request $request, Panne $panne, NotificationService $notifications): JsonResponse
@@ -74,7 +74,7 @@ class PanneController extends Controller
             'date_panne' => ['sometimes', 'required', 'date'],
             'anomalie' => ['sometimes', 'required', Rule::enum(PanneAnomalie::class)],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
-            'assigned_to' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('role', UserRole::Operator->value)],
+            'assigned_to' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('role', UserRole::Technician->value)],
         ]);
 
         $this->authorizeOperatorPanneAccess($request, $panne);
@@ -90,7 +90,7 @@ class PanneController extends Controller
             $notifications->panneAssigned($panne->refresh());
         }
 
-        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'assignedOperator')))->response();
+        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')))->response();
     }
 
     public function destroy(Panne $panne): JsonResponse
@@ -125,7 +125,7 @@ class PanneController extends Controller
         $role = $request->user()?->role;
         $value = $role instanceof UserRole ? $role->value : $role;
 
-        return $value === UserRole::Operator->value;
+        return $value === UserRole::Technician->value;
     }
 
     private function authorizeOperatorPanneAccess(Request $request, Panne $panne): void
@@ -141,7 +141,7 @@ class PanneController extends Controller
     {
         return match ($anomalie) {
             'Fuite côté abonné', 'Fuite après compteur' => PanneAnomalie::FuiteApresCompteur->value,
-            'Fuite côté RADEETA', 'Fuite compteur' => PanneAnomalie::FuiteAvantCompteur->value,
+            'Fuite côté SRM-FM', 'Fuite côté RADEETA', 'Fuite compteur' => PanneAnomalie::FuiteAvantCompteur->value,
             'Compteur bloqué' => PanneAnomalie::CompteurBloque->value,
             'Compteur cassé' => PanneAnomalie::CompteurCasse->value,
             'Compteur posé à l\'envers', 'Compteur mal posé' => PanneAnomalie::CompteurInverse->value,

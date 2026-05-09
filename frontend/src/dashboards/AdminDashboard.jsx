@@ -1,21 +1,21 @@
 import { DashboardFrame, useDashboardData } from './DashboardShared';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboard() {
-  const { factures, stats, pannes, releves, reparations, secteurs } = useDashboardData();
+  const { t } = useTranslation();
+  const { interventions, stats, pannes, secteurs } = useDashboardData();
 
   return (
     <DashboardFrame
-      title="Admin Dashboard"
-      subtitle="Full system overview, users, business data, reports, and global operations map."
+      title={t('dashboard.responsable')}
+      subtitle={t('dashboard.adminSubtitle')}
       stats={stats.data}
       pannes={pannes.items}
-      releves={releves.items}
-      factures={factures.items}
-      reparations={reparations.items}
+      interventions={interventions.items}
       secteurs={secteurs.items}
-      loading={stats.loading || pannes.loading || secteurs.loading || releves.loading || factures.loading || reparations.loading}
-      error={stats.error || pannes.error || secteurs.error || releves.error || factures.error || reparations.error}
-      mapTitle="Global pannes map"
+      loading={stats.loading || pannes.loading || secteurs.loading || interventions.loading}
+      error={stats.error || pannes.error || secteurs.error || interventions.error}
+      mapTitle={t('dashboard.globalPannesMap')}
     />
   );
 }

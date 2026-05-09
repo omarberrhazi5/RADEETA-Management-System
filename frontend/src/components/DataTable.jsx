@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { canCreate, canDelete, canUpdate } from '../utils/rbac';
 import Button from './ui/Button';
 import { EmptyState, LoadingState } from './PageState';
@@ -36,6 +37,7 @@ export default function DataTable({
   filters,
   emptyMessage,
 }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState({ key: columns[0]?.key, direction: 'asc' });
   const [page, setPage] = useState(1);
@@ -76,7 +78,7 @@ export default function DataTable({
         {showCreate && (
           <Button variant="primary" onClick={onCreate}>
             <Plus size={15} />
-            Add New
+            {t('buttons.addNew')}
           </Button>
         )}
       </div>
@@ -91,7 +93,7 @@ export default function DataTable({
                 setQuery(event.target.value);
                 setPage(1);
               }}
-              placeholder={`Search ${title.toLowerCase()}...`}
+              placeholder={t('common.searchPlaceholder')}
               className="h-11 w-full rounded-md border border-gray-300 pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
@@ -99,7 +101,7 @@ export default function DataTable({
         </div>
         {(query || filters) && (
           <div className="mt-2 text-xs text-gray-500">
-            Showing {visibleRows.length} of {rows.length} records
+            {t('common.showing', { visible: visibleRows.length, total: rows.length })}
           </div>
         )}
       </div>
@@ -107,7 +109,7 @@ export default function DataTable({
       {loading ? (
         <LoadingState />
       ) : visibleRows.length === 0 ? (
-        <EmptyState message={emptyMessage ?? `No ${title.toLowerCase()} found for the current filters.`} />
+        <EmptyState message={emptyMessage ?? t('common.emptyFiltered')} />
       ) : (
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
@@ -124,7 +126,7 @@ export default function DataTable({
                   ))}
                   {showActions && (
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">
-                      Actions
+                      {t('common.actions')}
                     </th>
                   )}
                 </tr>
@@ -141,12 +143,12 @@ export default function DataTable({
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
                           {showEdit && (
-                            <button type="button" onClick={() => onEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-blue-50 hover:text-blue-700" title="Edit">
+                            <button type="button" onClick={() => onEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-blue-50 hover:text-blue-700" title={t('buttons.edit')}>
                               <Pencil size={15} />
                             </button>
                           )}
                           {showDelete && (
-                            <button type="button" onClick={() => onDelete(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-red-50 hover:text-red-700" title="Delete">
+                            <button type="button" onClick={() => onDelete(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-red-50 hover:text-red-700" title={t('buttons.delete')}>
                               <Trash2 size={15} />
                             </button>
                           )}
@@ -160,15 +162,15 @@ export default function DataTable({
           </div>
           <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              Page {currentPage} of {totalPages} - {visibleRows.length} records
+              {t('common.pageOf', { current: currentPage, total: totalPages })} - {t('common.records', { count: visibleRows.length })}
             </div>
             <div className="flex gap-2">
               <Button variant="secondary" disabled={currentPage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
                 <ChevronLeft size={15} />
-                Previous
+                {t('buttons.previous')}
               </Button>
               <Button variant="secondary" disabled={currentPage === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
-                Next
+                {t('buttons.next')}
                 <ChevronRight size={15} />
               </Button>
             </div>

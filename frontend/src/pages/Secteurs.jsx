@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { endpoints } from '../api/resources';
 import DataTable from '../components/DataTable';
@@ -9,6 +10,7 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 
 export default function Secteurs() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const { error, items, loading, refresh } = useResource(endpoints.secteurs, { limit: 500 });
   const [formState, setFormState] = useState(null);
@@ -16,10 +18,10 @@ export default function Secteurs() {
   const [deleting, setDeleting] = useState(false);
 
   const fields = useMemo(() => [
-    { name: 'nom_secteur', label: 'Sector name', required: true, placeholder: 'Qods 1' },
+    { name: 'nom_secteur', label: t('forms.sectorName'), required: true, placeholder: 'Qods 1' },
     {
       name: 'emplacement',
-      label: 'Location',
+      label: t('forms.location'),
       type: 'select',
       required: true,
       defaultValue: 'Taza Haut',
@@ -28,10 +30,11 @@ export default function Secteurs() {
         { value: 'Taza Bas', label: 'Taza Bas' },
       ],
     },
-    { name: 'num_torne', label: 'Route number', required: true, placeholder: 'T-001' },
-    { name: 'latitude', label: 'Latitude', type: 'number', step: '0.000001' },
-    { name: 'longitude', label: 'Longitude', type: 'number', step: '0.000001' },
-  ], []);
+    { name: 'agence', label: t('forms.agency'), required: true, defaultValue: 'SRM-FM Taza' },
+    { name: 'num_torne', label: t('forms.routeNumber'), required: true, placeholder: 'T-001' },
+    { name: 'latitude', label: t('forms.latitude'), type: 'number', step: '0.000001' },
+    { name: 'longitude', label: t('forms.longitude'), type: 'number', step: '0.000001' },
+  ], [t]);
 
   async function saveSector(values) {
     const payload = {
@@ -63,8 +66,8 @@ export default function Secteurs() {
     <div className="space-y-4">
       {error && <ErrorState message={error} />}
       <DataTable
-        title="Sectors"
-        subtitle="Regional sectors, routes, and coordinates."
+        title={t('secteurs.title')}
+        subtitle={t('secteurs.subtitle')}
         resource="secteurs"
         role={role}
         loading={loading}
@@ -73,26 +76,27 @@ export default function Secteurs() {
         onEdit={(item) => setFormState({ item })}
         onDelete={setDeleteTarget}
         columns={[
-          { key: 'nom_secteur', header: 'Sector' },
-          { key: 'emplacement', header: 'Location' },
-          { key: 'num_torne', header: 'Tour' },
-          { key: 'latitude', header: 'Latitude' },
-          { key: 'longitude', header: 'Longitude' },
+          { key: 'nom_secteur', header: t('tables.sector') },
+          { key: 'emplacement', header: t('tables.location') },
+          { key: 'agence', header: t('tables.agency') },
+          { key: 'num_torne', header: t('tables.tour') },
+          { key: 'latitude', header: t('tables.latitude') },
+          { key: 'longitude', header: t('tables.longitude') },
         ]}
       />
       {formState && (
         <EntityFormModal
-          title={formState.item ? 'Edit Sector' : 'Add Sector'}
+          title={formState.item ? t('secteurs.edit') : t('secteurs.add')}
           fields={fields}
           initialItem={formState.item}
-          submitLabel={formState.item ? 'Save changes' : 'Create sector'}
+          submitLabel={formState.item ? t('buttons.saveChanges') : t('secteurs.create')}
           onClose={() => setFormState(null)}
           onSubmit={saveSector}
         />
       )}
       {deleteTarget && (
         <ConfirmDialog
-          message={`Delete sector "${deleteTarget.nom_secteur}"? This action cannot be undone.`}
+          message={t('secteurs.deleteConfirm', { name: deleteTarget.nom_secteur })}
           onConfirm={() => deleteSector(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}

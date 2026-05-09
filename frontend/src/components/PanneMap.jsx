@@ -1,8 +1,10 @@
 import L from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Badge from './ui/Badge';
 import { EmptyState, LoadingState } from './PageState';
+import { translateAnomaly, translateStatus } from '../utils/i18nLabels';
 
 const TAZA_CENTER = [34.22, -4.01];
 
@@ -20,6 +22,7 @@ function iconFor(status) {
 }
 
 export default function PanneMap({ pannes = [], sectors = [], height = '420px', loading = false }) {
+  const { t } = useTranslation();
   const points = pannes
     .map((panne) => {
       const secteur = panne.compteur?.secteur;
@@ -46,9 +49,9 @@ export default function PanneMap({ pannes = [], sectors = [], height = '420px', 
   return (
     <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm" style={{ height }}>
       {loading ? (
-        <LoadingState label="Loading map..." />
+        <LoadingState label={t('map.loading')} />
       ) : sectorPoints.length === 0 ? (
-        <EmptyState message="No pannes or sector coordinates available for the map." />
+        <EmptyState message={t('map.empty')} />
       ) : (
         <MapContainer center={TAZA_CENTER} zoom={13} minZoom={11} scrollWheelZoom className="h-full w-full">
           <TileLayer
@@ -63,16 +66,16 @@ export default function PanneMap({ pannes = [], sectors = [], height = '420px', 
             >
               <Popup>
                 <div className="min-w-56 space-y-2 text-sm">
-                  <strong className="block text-gray-900">{point.label ?? 'Sector'}</strong>
+                  <strong className="block text-gray-900">{point.label ?? t('map.sector')}</strong>
                   {point.panne && (
                     <>
-                      <div><span className="font-semibold">Panne:</span> #{point.panne.id_panne ?? point.panne.id}</div>
-                      <div><span className="font-semibold">Client:</span> {point.panne.compteur?.client ? `${point.panne.compteur.client.prenom ?? ''} ${point.panne.compteur.client.nom ?? ''}`.trim() : '-'}</div>
-                      <div><span className="font-semibold">Anomaly:</span> {point.panne.anomalie}</div>
-                      <div><span className="font-semibold">Operator:</span> {point.panne.assigned_operator ? `${point.panne.assigned_operator.prenom ?? ''} ${point.panne.assigned_operator.nom ?? ''}`.trim() : '-'}</div>
-                      <Badge label={point.panne.statut ?? point.panne.status ?? 'unknown'} color="red" />
+                      <div><span className="font-semibold">{t('tables.panne')}:</span> #{point.panne.id_panne ?? point.panne.id}</div>
+                      <div><span className="font-semibold">{t('tables.client')}:</span> {point.panne.compteur?.client ? `${point.panne.compteur.client.prenom ?? ''} ${point.panne.compteur.client.nom ?? ''}`.trim() : '-'}</div>
+                      <div><span className="font-semibold">{t('tables.anomaly')}:</span> {translateAnomaly(t, point.panne.anomalie)}</div>
+                      <div><span className="font-semibold">{t('tables.technician')}:</span> {point.panne.assigned_technician || point.panne.assigned_operator ? `${(point.panne.assigned_technician ?? point.panne.assigned_operator).prenom ?? ''} ${(point.panne.assigned_technician ?? point.panne.assigned_operator).nom ?? ''}`.trim() : '-'}</div>
+                      <Badge label={translateStatus(t, point.panne.statut ?? point.panne.status)} color="red" />
                       <Link to="../pannes" className="block text-xs font-semibold text-blue-700 hover:underline">
-                        Open pannes list
+                        {t('map.openPannesList')}
                       </Link>
                     </>
                   )}

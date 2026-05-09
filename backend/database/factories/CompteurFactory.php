@@ -18,6 +18,7 @@ class CompteurFactory extends Factory
             'cadran' => fake()->unique()->numerify('CAD-######'),
             'calibre' => fake()->randomElement(['15', '20']),
             'marque' => fake()->randomElement(['Elster', 'Itron', 'Sensus', 'Zenner', 'Actaris']),
+            'service_type' => fake()->randomElement(['water', 'electricity']),
             'index_releve' => fake()->randomFloat(2, 0, 15000),
             'id_client' => Client::factory(),
             'id_secteur' => Secteur::factory(),

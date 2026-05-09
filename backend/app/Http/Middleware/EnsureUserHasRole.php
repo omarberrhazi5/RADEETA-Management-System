@@ -19,7 +19,7 @@ class EnsureUserHasRole
             return response()->json(['message' => 'Developer access is disabled in production.'], 403);
         }
 
-        if ($role === UserRole::SuperAdmin->value) {
+        if ($role === UserRole::Directeur->value) {
             return $next($request);
         }
 

@@ -1,47 +1,50 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { endpoints } from '../api/resources';
 import DataTable from '../components/DataTable';
 import EntityFormModal from '../components/EntityFormModal';
 import { ErrorState } from '../components/PageState';
+import Badge from '../components/ui/Badge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
+import { translateRepairDescription } from '../utils/i18nLabels';
+import { ROLES } from '../utils/rbac';
 
 export default function Reparations() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { role } = useAuth();
   const { error, items, loading, refresh } = useResource(endpoints.reparations, { limit: 500 });
-  const operators = useResource(endpoints.operators, { limit: 500 }, { enabled: role !== 'operator' });
+  const technicians = useResource(endpoints.technicians, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN });
   const [formState, setFormState] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [filters, setFilters] = useState({ month: '', operator: '' });
 
   const fields = useMemo(() => [
-    { name: 'id_panne', label: 'Panne ID', type: 'number', required: true },
-    ...(role === 'operator' ? [] : [{ name: 'id_plombier', label: 'Operator ID', type: 'number', required: true }]),
-    { name: 'date_reparation', label: 'Repair date', type: 'date', required: true, defaultValue: new Date().toISOString().slice(0, 10) },
-    { name: 'description', label: 'Description', type: 'textarea', defaultValue: 'Intervention completed' },
-  ], [role]);
+    { name: 'id_panne', label: t('forms.panneId'), type: 'number', required: true },
+    ...(role === ROLES.TECHNICIAN ? [] : [{ name: 'id_plombier', label: t('forms.technicianId'), type: 'number', required: true }]),
+    { name: 'date_reparation', label: t('forms.repairDate'), type: 'date', required: true, defaultValue: new Date().toISOString().slice(0, 10) },
+    { name: 'description', label: t('forms.description'), type: 'textarea', defaultValue: t('reparations.defaultDescription') },
+  ], [role, t]);
 
   const createRepair = useCallback((panne = null) => {
     setFormState({
       item: {
         id_panne: panne?.id_panne ?? panne?.id ?? '',
+        id_plombier: panne?.assigned_to ?? '',
         date_reparation: new Date().toISOString().slice(0, 10),
-        description: 'Intervention completed',
+        description: t('reparations.defaultDescription'),
       },
       isCreate: true,
     });
-  }, []);
+  }, [t]);
 
   async function saveRepair(values) {
-    const payload = {
-      ...values,
-      ...(role === 'operator' ? {} : { id_plombier: values.id_plombier }),
-    };
+    const payload = { ...values, ...(role === ROLES.TECHNICIAN ? {} : { id_plombier: values.id_plombier }) };
 
     if (formState?.isCreate) {
       await api.post('/reparations', payload);
@@ -57,10 +60,6 @@ export default function Reparations() {
       window.history.replaceState({}, document.title);
     }
   }, [createRepair, location.state?.panne]);
-
-  async function updateRepair(repair) {
-    setFormState({ item: repair, isCreate: false });
-  }
 
   async function deleteRepair(repair) {
     try {
@@ -83,8 +82,8 @@ export default function Reparations() {
     <div className="space-y-4">
       {error && <ErrorState message={error} />}
       <DataTable
-        title="Repairs"
-        subtitle="Repair interventions and operator activity."
+        title={t('reparations.title')}
+        subtitle={t('reparations.subtitle')}
         resource="reparations"
         role={role}
         loading={loading}
@@ -92,40 +91,42 @@ export default function Reparations() {
         filters={(
           <>
             <input type="month" value={filters.month} onChange={(event) => setFilters((current) => ({ ...current, month: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm" />
-            {role !== 'operator' && (
+            {role !== ROLES.TECHNICIAN && (
               <select value={filters.operator} onChange={(event) => setFilters((current) => ({ ...current, operator: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
-                <option value="">All operators</option>
-                {operators.items.map((operator) => <option key={operator.id} value={operator.id}>{operator.prenom} {operator.nom}</option>)}
+                <option value="">{t('common.allTechnicians')}</option>
+                {technicians.items.map((technician) => <option key={technician.id} value={technician.id}>{technician.prenom} {technician.nom}</option>)}
               </select>
             )}
           </>
         )}
-        emptyMessage="No repairs found for the selected filters."
+        emptyMessage={t('reparations.empty')}
         onCreate={() => createRepair()}
-        onEdit={updateRepair}
+        onEdit={(repair) => setFormState({ item: repair, isCreate: false })}
         onDelete={setDeleteTarget}
         columns={[
-          { key: 'id_reparation', header: 'Repair', render: (row) => `#${row.id_reparation ?? row.id}` },
-          { key: 'panne', header: 'Panne', render: (row) => row.panne ? `#${row.panne.id_panne ?? row.panne.id}` : '-' },
-          { key: 'meter', header: 'Meter', render: (row) => row.panne?.compteur?.cadran ?? '-' },
-          { key: 'operator', header: 'Operator', render: (row) => row.plombier ? `${row.plombier.nom ?? ''} ${row.plombier.prenom ?? ''}`.trim() : '-' },
-          { key: 'date_reparation', header: 'Date' },
-          { key: 'description', header: 'Description' },
+          { key: 'service_type', header: t('tables.service'), render: (row) => {
+            const serviceType = row.panne?.compteur?.service_type ?? row.service_type ?? 'water';
+            return <Badge label={t(`services.${serviceType}`)} color={serviceType === 'electricity' ? 'amber' : 'blue'} />;
+          } },
+          { key: 'meter', header: t('tables.meter'), render: (row) => row.panne?.compteur?.cadran ?? '-' },
+          { key: 'operator', header: t('tables.technician'), render: (row) => row.plombier ? `${row.plombier.nom ?? ''} ${row.plombier.prenom ?? ''}`.trim() : '-' },
+          { key: 'date_reparation', header: t('tables.date') },
+          { key: 'description', header: t('forms.description'), render: (row) => translateRepairDescription(t, row.description) },
         ]}
       />
       {formState && (
         <EntityFormModal
-          title={formState.isCreate ? 'Create Repair' : 'Edit Repair'}
+          title={formState.isCreate ? t('reparations.add') : t('reparations.edit')}
           fields={fields}
           initialItem={formState.item}
-          submitLabel={formState.isCreate ? 'Create repair' : 'Save changes'}
+          submitLabel={formState.isCreate ? t('reparations.create') : t('buttons.saveChanges')}
           onClose={() => setFormState(null)}
           onSubmit={saveRepair}
         />
       )}
       {deleteTarget && (
         <ConfirmDialog
-          message={`Delete repair #${deleteTarget.id_reparation ?? deleteTarget.id}? This action cannot be undone.`}
+          message={t('reparations.deleteConfirm', { id: deleteTarget.id_reparation ?? deleteTarget.id })}
           onConfirm={() => deleteRepair(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}

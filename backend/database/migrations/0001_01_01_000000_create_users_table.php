@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('identifiant')->unique();
             $table->string('name')->nullable();
             $table->string('email')->unique()->nullable();
+            $table->string('agence')->default('SRM-FM Taza');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', UserRole::values())->default(UserRole::Viewer->value);

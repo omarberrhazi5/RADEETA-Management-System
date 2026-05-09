@@ -6,10 +6,8 @@ use App\Enums\PanneStatus;
 use App\Enums\UserRole;
 use App\Models\Client;
 use App\Models\Compteur;
-use App\Models\Facture;
+use App\Models\Intervention;
 use App\Models\Panne;
-use App\Models\Reparation;
-use App\Models\Releve;
 use App\Models\Secteur;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -36,22 +34,22 @@ class DashboardController extends Controller
                 'pannes_ouvertes_count' => $secteur->pannes_ouvertes_count,
             ]);
 
-        $topOperators = User::query()
-            ->where('role', UserRole::Operator->value)
+        $topTechnicians = User::query()
+            ->where('role', UserRole::Technician->value)
             ->withCount([
-                'reparations as pannes_resolues_count' => fn ($query) => $query
-                    ->whereMonth('date_reparation', now()->month)
-                    ->whereYear('date_reparation', now()->year)
-                    ->whereHas('panne', fn ($panneQuery) => $panneQuery->where('status', PanneStatus::Resolved->value)),
+                'interventions as pannes_resolues_count' => fn ($query) => $query
+                    ->whereMonth('started_at', now()->month)
+                    ->whereYear('started_at', now()->year)
+                    ->where('status', 'terminee'),
             ])
             ->orderByDesc('pannes_resolues_count')
             ->orderBy('name')
             ->limit(5)
             ->get()
-            ->map(fn (User $operator): array => [
-                'id' => $operator->id,
-                'name' => $operator->name ?: trim($operator->prenom.' '.$operator->nom),
-                'pannes_resolues_count' => (int) $operator->pannes_resolues_count,
+            ->map(fn (User $technician): array => [
+                'id' => $technician->id,
+                'name' => $technician->name ?: trim($technician->prenom.' '.$technician->nom),
+                'pannes_resolues_count' => (int) $technician->pannes_resolues_count,
             ]);
 
         return response()->json([
@@ -60,20 +58,24 @@ class DashboardController extends Controller
             'total_secteurs' => Secteur::count(),
             'active_pannes' => Panne::where('status', PanneStatus::Open->value)->count(),
             'pannes_ouvertes' => Panne::where('status', PanneStatus::Open->value)->count(),
-            'reparations_mois' => Reparation::whereMonth('date_reparation', now()->month)
-                ->whereYear('date_reparation', now()->year)
+            'water_pannes' => Panne::whereHas('compteur', fn ($query) => $query->where('service_type', 'water'))->count(),
+            'electricity_pannes' => Panne::whereHas('compteur', fn ($query) => $query->where('service_type', 'electricity'))->count(),
+            'water_clients' => Client::where('service_type', 'water')->count(),
+            'electricity_clients' => Client::where('service_type', 'electricity')->count(),
+            'interventions_mois' => Intervention::whereMonth('started_at', now()->month)
+                ->whereYear('started_at', now()->year)
                 ->count(),
-            'total_invoices' => Facture::count(),
-            'unpaid_invoices' => Facture::whereIn('statut', ['impayee', 'partielle'])->count(),
-            'total_consumption' => (float) Releve::sum('consommation'),
-            'monthly_revenue' => (float) Facture::where('statut', 'payee')
-                ->whereMonth('generated_at', now()->month)
-                ->whereYear('generated_at', now()->year)
-                ->sum('total_ttc'),
+            'total_interventions' => Intervention::count(),
+            'interventions_water' => Intervention::where('service_type', 'water')->count(),
+            'interventions_electricity' => Intervention::where('service_type', 'electricity')->count(),
+            'active_interventions' => Intervention::where('status', 'en_cours')->count(),
+            'completed_interventions' => Intervention::where('status', 'terminee')->count(),
+            'urgent_interventions' => Intervention::where('priority', 'urgent')->whereIn('status', ['en_attente', 'en_cours'])->count(),
             'active_meters' => Compteur::count(),
             'meters_per_sector' => $metersPerSector,
             'secteurs_gis' => $metersPerSector,
-            'top_operators' => $topOperators,
+            'top_technicians' => $topTechnicians,
+            'top_operators' => $topTechnicians,
         ]);
     }
 }

@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { endpoints, unwrapCollection } from '../api/resources';
+import { currentLocale, translateNotificationMessage, translateNotificationTitle } from '../utils/i18nLabels';
 
-function formatTime(value) {
+function formatTime(value, t, locale) {
   if (!value) return '';
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
 
   const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-  if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`;
+  if (seconds < 60) return t('common.justNow');
+  if (seconds < 3600) return t('common.minutesAgo', { count: Math.floor(seconds / 60) });
+  if (seconds < 86400) return t('common.hoursAgo', { count: Math.floor(seconds / 3600) });
 
-  return date.toLocaleDateString('fr-MA', {
+  return date.toLocaleDateString(locale, {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -22,14 +24,13 @@ function formatTime(value) {
 }
 
 function typeColor(type) {
-  if (String(type).includes('paiement')) return 'bg-green-500';
-  if (String(type).includes('facture')) return 'bg-blue-500';
   if (String(type).includes('repair')) return 'bg-amber-500';
   if (String(type).includes('panne')) return 'bg-red-500';
   return 'bg-gray-400';
 }
 
 export default function NotificationBell() {
+  const { i18n, t } = useTranslation();
   const dropdownRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -47,13 +48,13 @@ export default function NotificationBell() {
       setItems(normalized.items);
       setUnreadCount(response.data?.meta?.unread_count ?? normalized.items.filter((item) => !item.is_read).length);
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Unable to load notifications.');
+      setError(err.response?.data?.message ?? t('notifications.loadFailed'));
       setItems([]);
       setUnreadCount(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -79,7 +80,7 @@ export default function NotificationBell() {
       setUnreadCount(response.data?.unread_count ?? 0);
       setItems((current) => current.map((item) => ids.length === 0 || ids.includes(item.id) ? { ...item, is_read: true } : item));
     } catch (err) {
-      setError(err.response?.data?.message ?? 'Unable to update notifications.');
+      setError(err.response?.data?.message ?? t('notifications.updateFailed'));
     } finally {
       setMarking(false);
     }
@@ -94,7 +95,7 @@ export default function NotificationBell() {
           if (!open) load();
         }}
         className="relative inline-flex h-11 w-11 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
-        aria-label="Notifications"
+        aria-label={t('notifications.title')}
       >
         <Bell size={19} />
         {unreadCount > 0 && (
@@ -108,8 +109,8 @@ export default function NotificationBell() {
         <div className="absolute right-0 top-12 z-50 w-[calc(100vw-2rem)] max-w-96 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-              <p className="text-xs text-gray-500">{unreadCount} unread</p>
+              <h3 className="text-sm font-semibold text-gray-900">{t('notifications.title')}</h3>
+              <p className="text-xs text-gray-500">{t('common.unread', { count: unreadCount })}</p>
             </div>
             <button
               type="button"
@@ -118,7 +119,7 @@ export default function NotificationBell() {
               className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:text-gray-400 disabled:hover:bg-transparent"
             >
               {marking ? <Loader2 size={14} className="animate-spin" /> : <CheckCheck size={14} />}
-              Mark read
+              {t('buttons.markRead')}
             </button>
           </div>
 
@@ -126,14 +127,14 @@ export default function NotificationBell() {
             {loading ? (
               <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-gray-500">
                 <Loader2 size={16} className="animate-spin" />
-                Loading notifications...
+                {t('common.loadingNotifications')}
               </div>
             ) : error ? (
               <div className="px-4 py-6 text-sm text-red-600">{error}</div>
             ) : items.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="text-sm font-medium text-gray-800">No notifications</p>
-                <p className="mt-1 text-xs text-gray-500">New operational updates will appear here.</p>
+                <p className="text-sm font-medium text-gray-800">{t('notifications.emptyTitle')}</p>
+                <p className="mt-1 text-xs text-gray-500">{t('notifications.emptySubtitle')}</p>
               </div>
             ) : (
               items.map((item) => (
@@ -145,9 +146,9 @@ export default function NotificationBell() {
                 >
                   <span className={`mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full ${typeColor(item.type)}`} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-gray-900">{item.title}</span>
-                    <span className="mt-0.5 line-clamp-2 block text-xs text-gray-600">{item.message}</span>
-                    <span className="mt-1 block text-[11px] text-gray-400">{formatTime(item.created_at ?? item.timestamp)}</span>
+                    <span className="block truncate text-sm font-semibold text-gray-900">{translateNotificationTitle(t, item)}</span>
+                    <span className="mt-0.5 line-clamp-2 block text-xs text-gray-600">{translateNotificationMessage(t, item)}</span>
+                    <span className="mt-1 block text-[11px] text-gray-400">{formatTime(item.created_at ?? item.timestamp, t, currentLocale(i18n))}</span>
                   </span>
                   {!item.is_read && <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />}
                 </button>

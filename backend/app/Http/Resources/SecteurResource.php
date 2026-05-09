@@ -14,6 +14,7 @@ class SecteurResource extends JsonResource
             'id_secteur' => $this->id,
             'nom_secteur' => $this->nom_secteur,
             'emplacement' => $this->emplacement,
+            'agence' => $this->agence,
             'num_torne' => $this->num_torne,
             'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
             'longitude' => $this->longitude !== null ? (float) $this->longitude : null,

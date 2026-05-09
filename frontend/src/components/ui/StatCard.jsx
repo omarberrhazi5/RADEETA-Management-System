@@ -9,18 +9,16 @@ export default function StatCard({ label, value, sub, icon: Icon, color = 'blue'
   const c = colors[color];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5 flex items-start gap-4">
-      {/* Icon bubble */}
-      <div className={`${c.bg} ${c.text} p-2.5 rounded-lg flex-shrink-0`}>
+    <div className="flex min-h-[116px] items-center gap-4 rounded-xl border border-gray-100 bg-white p-5">
+      <div className={`${c.bg} ${c.text} flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg`}>
         <Icon size={18} strokeWidth={1.8} />
       </div>
 
-      {/* Text */}
-      <div className="min-w-0">
-        <p className="text-xs text-gray-400 font-medium">{label}</p>
-        <p className={`text-2xl font-semibold mt-0.5 ${c.val}`}>{value}</p>
+      <div className="min-w-0 flex-1 self-center">
+        <p className="text-xs font-medium leading-5 text-gray-400">{label}</p>
+        <p className={`mt-0.5 text-2xl font-semibold leading-8 ${c.val}`}>{value}</p>
         {sub && (
-          <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+          <p className="mt-0.5 text-xs leading-5 text-gray-400">{sub}</p>
         )}
       </div>
     </div>

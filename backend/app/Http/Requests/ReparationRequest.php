@@ -42,7 +42,7 @@ class ReparationRequest extends FormRequest
             'id_plombier' => [
                 $required,
                 'required',
-                Rule::exists('users', 'id')->where('role', UserRole::Operator->value),
+                Rule::exists('users', 'id')->where('role', UserRole::Technician->value),
             ],
             'date_reparation' => [$required, 'required', 'date'],
             'description' => ['nullable', 'string', 'max:5000'],
@@ -94,6 +94,6 @@ class ReparationRequest extends FormRequest
         $role = $this->user()?->role;
         $value = $role instanceof UserRole ? $role->value : $role;
 
-        return $value === UserRole::Operator->value;
+        return $value === UserRole::Technician->value;
     }
 }

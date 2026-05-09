@@ -31,7 +31,7 @@ function BrandLogo() {
                 <path d="M9 34c5-2.1 9.7-2.1 14.2 0 5.3 2.5 10.5 2.5 15.8 0" fill="none" stroke="#bfdbfe" strokeLinecap="round" strokeWidth="2" />
             </svg>
             <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-white">Gestion de Secteur</p>
+                <p className="truncate text-sm font-extrabold text-white">Gestion de Reclamation</p>
                 <p className="truncate text-xs font-semibold text-slate-400">SRM-FM Taza</p>
             </div>
         </div>

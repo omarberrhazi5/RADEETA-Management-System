@@ -41,7 +41,7 @@ export default function Login({ onLogin }) {
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_20px_45px_-18px_rgba(37,99,235,0.9)]">
                         <Droplets className="h-7 w-7" />
                     </div>
-                    <h1 className="mt-4 text-3xl font-extrabold tracking-normal text-slate-950">Gestion de Secteur</h1>
+                    <h1 className="mt-4 text-3xl font-extrabold tracking-normal text-slate-950">Gestion de Reclamation</h1>
                     <p className="mt-1 text-sm font-medium text-slate-500">SRM-FM Taza</p>
                 </div>
 

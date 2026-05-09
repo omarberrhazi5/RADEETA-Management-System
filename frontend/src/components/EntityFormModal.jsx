@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 
@@ -12,10 +13,11 @@ export default function EntityFormModal({
   title,
   fields,
   initialItem,
-  submitLabel = 'Save',
+  submitLabel,
   onClose,
   onSubmit,
 }) {
+  const { t } = useTranslation();
   const initialValues = useMemo(() => {
     return fields.reduce((values, field) => ({
       ...values,
@@ -42,7 +44,7 @@ export default function EntityFormModal({
 
     fields.forEach((field) => {
       if (field.required && !String(values[field.name] ?? '').trim()) {
-        nextErrors[field.name] = `${field.label} is required.`;
+        nextErrors[field.name] = t('forms.required');
       }
     });
 
@@ -69,7 +71,7 @@ export default function EntityFormModal({
           Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages]),
         ));
       } else {
-        setErrors({ general: error.response?.data?.message ?? 'Unable to save. Check the form and try again.' });
+        setErrors({ general: error.response?.data?.message ?? t('forms.unableToSave') });
       }
     } finally {
       setSaving(false);
@@ -99,9 +101,9 @@ export default function EntityFormModal({
                 disabled={field.disabled}
                 className={`w-full rounded-md border px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
               >
-                <option value="">{field.placeholder ?? 'Select an option'}</option>
+                <option value="">{field.placeholderKey ? t(field.placeholderKey) : field.placeholder ?? t('common.selectOption')}</option>
                 {field.options?.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>
                 ))}
               </select>
             ) : field.type === 'textarea' ? (
@@ -109,7 +111,8 @@ export default function EntityFormModal({
                 rows={field.rows ?? 3}
                 value={values[field.name] ?? ''}
                 onChange={(event) => update(field.name, event.target.value)}
-                placeholder={field.placeholder}
+                placeholder={field.placeholderKey ? t(field.placeholderKey) : field.placeholder}
+                disabled={field.disabled}
                 className={`w-full rounded-md border px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
               />
             ) : (
@@ -117,21 +120,22 @@ export default function EntityFormModal({
                 type={field.type ?? 'text'}
                 value={values[field.name] ?? ''}
                 onChange={(event) => update(field.name, event.target.value)}
-                placeholder={field.placeholder}
+                placeholder={field.placeholderKey ? t(field.placeholderKey) : field.placeholder}
                 min={field.min}
                 step={field.step}
+                disabled={field.disabled}
                 className={`w-full rounded-md border px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
               />
             )}
 
-            {field.help && <p className="mt-1 text-xs text-gray-500">{field.help}</p>}
+            {(field.help || field.helpKey) && <p className="mt-1 text-xs text-gray-500">{field.helpKey ? t(field.helpKey) : field.help}</p>}
             {errors[field.name] && <p className="mt-1 text-xs text-red-600">{errors[field.name]}</p>}
           </div>
         ))}
 
         <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" type="submit" loading={saving}>{submitLabel}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('buttons.cancel')}</Button>
+          <Button variant="primary" type="submit" loading={saving}>{submitLabel ?? t('buttons.save')}</Button>
         </div>
       </form>
     </Modal>

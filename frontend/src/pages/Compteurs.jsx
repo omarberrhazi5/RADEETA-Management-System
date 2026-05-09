@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../api/axios';
 import { endpoints } from '../api/resources';
 import DataTable from '../components/DataTable';
@@ -10,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 
 export default function Compteurs() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const { error, items, loading, refresh } = useResource(endpoints.compteurs, { limit: 500 });
   const [formState, setFormState] = useState(null);
@@ -17,12 +19,23 @@ export default function Compteurs() {
   const [deleting, setDeleting] = useState(false);
 
   const fields = useMemo(() => [
-    { name: 'cadran', label: 'Cadran', required: true },
-    { name: 'id_client', label: 'Client ID', type: 'number', required: true },
-    { name: 'id_secteur', label: 'Sector ID', type: 'number', required: true },
+    { name: 'cadran', label: t('forms.cadran'), required: true },
+    { name: 'id_client', label: t('forms.clientId'), type: 'number', required: true },
+    { name: 'id_secteur', label: t('forms.sectorId'), type: 'number', required: true },
+    {
+      name: 'service_type',
+      label: t('forms.serviceType'),
+      type: 'select',
+      required: true,
+      defaultValue: 'water',
+      options: [
+        { value: 'water', label: t('services.water') },
+        { value: 'electricity', label: t('services.electricity') },
+      ],
+    },
     {
       name: 'calibre',
-      label: 'Calibre',
+      label: t('forms.calibre'),
       type: 'select',
       required: true,
       defaultValue: '15',
@@ -31,15 +44,12 @@ export default function Compteurs() {
         { value: '20', label: '20' },
       ],
     },
-    { name: 'index_releve', label: 'Current index', type: 'number', min: '0', step: '0.01', required: true, defaultValue: '0' },
-    { name: 'marque', label: 'Brand' },
-  ], []);
+    { name: 'index_releve', label: t('forms.currentIndex'), type: 'number', min: '0', step: '0.01', required: true, defaultValue: '0' },
+    { name: 'marque', label: t('forms.brand') },
+  ], [t]);
 
   async function saveMeter(values) {
-    const payload = {
-      ...values,
-      index_releve: Number(values.index_releve),
-    };
+    const payload = { ...values, index_releve: Number(values.index_releve) };
 
     if (formState?.item) {
       await api.put(`/compteurs/${formState.item.id_compteur ?? formState.item.id}`, payload);
@@ -64,8 +74,8 @@ export default function Compteurs() {
     <div className="space-y-4">
       {error && <ErrorState message={error} />}
       <DataTable
-        title="Meters"
-        subtitle="Meter inventory and SRM service data."
+        title={t('compteurs.title')}
+        subtitle={t('compteurs.subtitle')}
         resource="compteurs"
         role={role}
         loading={loading}
@@ -74,28 +84,28 @@ export default function Compteurs() {
         onEdit={(item) => setFormState({ item })}
         onDelete={setDeleteTarget}
         columns={[
-          { key: 'cadran', header: 'Cadran' },
-          { key: 'type_produit', header: 'Type', render: (row) => <Badge label={row.type_produit ?? 'N/A'} color={row.type_produit === 'ELEC' ? 'amber' : 'blue'} /> },
-          { key: 'num_contrat', header: 'N Contrat' },
-          { key: 'num_tournee', header: 'Tournee' },
-          { key: 'usage', header: 'Usage' },
-          { key: 'client', header: 'Client', render: (row) => row.client ? `${row.client.nom ?? ''} ${row.client.prenom ?? ''}`.trim() : '-' },
-          { key: 'secteur', header: 'Sector', render: (row) => row.secteur?.nom_secteur ?? '-' },
+          { key: 'cadran', header: t('tables.cadran') },
+          { key: 'type_produit', header: t('tables.service'), render: (row) => <Badge label={t(`services.${row.service_type ?? 'water'}`)} color={row.service_type === 'electricity' ? 'amber' : 'blue'} /> },
+          { key: 'num_contrat', header: t('tables.contractNumber') },
+          { key: 'num_tournee', header: t('tables.tournee') },
+          { key: 'usage', header: t('tables.usage') },
+          { key: 'client', header: t('tables.client'), render: (row) => row.client ? `${row.client.nom ?? ''} ${row.client.prenom ?? ''}`.trim() : '-' },
+          { key: 'secteur', header: t('tables.sector'), render: (row) => row.secteur?.nom_secteur ?? '-' },
         ]}
       />
       {formState && (
         <EntityFormModal
-          title={formState.item ? 'Edit Meter' : 'Add Meter'}
+          title={formState.item ? t('compteurs.edit') : t('compteurs.add')}
           fields={fields}
           initialItem={formState.item}
-          submitLabel={formState.item ? 'Save changes' : 'Create meter'}
+          submitLabel={formState.item ? t('buttons.saveChanges') : t('compteurs.create')}
           onClose={() => setFormState(null)}
           onSubmit={saveMeter}
         />
       )}
       {deleteTarget && (
         <ConfirmDialog
-          message={`Delete meter "${deleteTarget.cadran}"? This action cannot be undone.`}
+          message={t('compteurs.deleteConfirm', { name: deleteTarget.cadran })}
           onConfirm={() => deleteMeter(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}

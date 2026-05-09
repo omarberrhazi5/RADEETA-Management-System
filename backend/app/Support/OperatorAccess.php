@@ -14,7 +14,7 @@ class OperatorAccess
         $role = $user?->role;
         $value = $role instanceof UserRole ? $role->value : $role;
 
-        return $value === UserRole::Operator->value;
+        return $value === UserRole::Technician->value;
     }
 
     public static function scopePannes(Builder $query, User $user): Builder
@@ -51,14 +51,6 @@ class OperatorAccess
     {
         return $query->whereHas('compteurs', function (Builder $compteur) use ($user): void {
             self::scopeCompteurs($compteur, $user);
-        });
-    }
-
-    public static function scopeFactures(Builder $query, User $user): Builder
-    {
-        return $query->where(function (Builder $query) use ($user): void {
-            $query->whereHas('releve', fn (Builder $releve) => $releve->where('created_by', $user->id))
-                ->orWhereHas('compteur.pannes', fn (Builder $panne) => $panne->where('assigned_to', $user->id));
         });
     }
 

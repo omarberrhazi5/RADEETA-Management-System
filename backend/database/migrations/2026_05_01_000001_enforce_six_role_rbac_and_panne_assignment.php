@@ -14,11 +14,12 @@ return new class extends Migration
                 DB::statement("ALTER TABLE users MODIFY role VARCHAR(50) NOT NULL DEFAULT 'viewer'");
             }
 
-            DB::table('users')->where('role', 'plombier')->update(['role' => 'operator']);
-            DB::table('users')->where('role', 'technician')->update(['role' => 'operator']);
-            DB::table('users')->where('role', 'responsable')->update(['role' => 'manager']);
+            DB::table('users')->where('role', 'super_admin')->update(['role' => 'directeur']);
+            DB::table('users')->where('role', 'admin')->update(['role' => 'responsable']);
+            DB::table('users')->where('role', 'plombier')->update(['role' => 'technician']);
+            DB::table('users')->where('role', 'operator')->update(['role' => 'technician']);
             DB::table('users')
-                ->whereNotIn('role', ['super_admin', 'admin', 'manager', 'operator', 'viewer', 'developer'])
+                ->whereNotIn('role', ['directeur', 'responsable', 'manager', 'technician', 'viewer', 'developer'])
                 ->update(['role' => 'viewer']);
         }
 

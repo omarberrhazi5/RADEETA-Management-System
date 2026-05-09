@@ -15,6 +15,8 @@ class CompteurResource extends JsonResource
             'cadran' => $this->cadran,
             'calibre' => $this->calibre,
             'marque' => $this->marque,
+            'service_type' => $this->service_type,
+            'type_produit' => $this->service_type === 'electricity' ? 'ELEC' : 'EAU',
             'index_releve' => $this->index_releve,
             'statut' => $this->pannes->where('status', 'open')->isNotEmpty() ? 'en panne' : 'actif',
             'date_installation' => $this->created_at?->toDateString(),

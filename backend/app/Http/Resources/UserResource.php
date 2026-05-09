@@ -17,7 +17,9 @@ class UserResource extends JsonResource
             'prenom' => $this->prenom,
             'identifiant' => $this->identifiant,
             'email' => $this->email,
+            'agence' => $this->agence,
             'role' => $this->role instanceof UserRole ? $this->role->value : $this->role,
+            'status' => 'active',
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

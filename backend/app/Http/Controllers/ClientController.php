@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ClientResource;
 use App\Models\Client;
+use App\Models\Secteur;
 use App\Support\OperatorAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ class ClientController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) request('limit', 10), 500);
-        $query = Client::with('compteurs.secteur', 'compteurs.pannes');
+        $query = Client::with('secteur', 'compteurs.secteur', 'compteurs.pannes');
 
         if (OperatorAccess::isOperator($request->user())) {
             OperatorAccess::scopeClients($query, $request->user());
@@ -34,14 +35,20 @@ class ClientController extends Controller
             'police' => ['required', 'string', 'max:255', Rule::unique('clients', 'police')],
             'nom' => ['required', 'string', 'max:255'],
             'prenom' => ['nullable', 'string', 'max:255'],
+            'cin' => ['nullable', 'string', 'max:20'],
             'telephone' => ['nullable', 'string', 'max:255'],
-            'adresse' => ['nullable', 'string', 'max:255'],
+            'adresse' => ['required', 'string', 'max:255'],
+            'type_abonnement' => ['required', Rule::in(['domestic', 'commercial', 'industrial'])],
+            'service_type' => ['required', Rule::in(['water', 'electricity'])],
+            'id_secteur' => ['required', 'integer', Rule::exists('secteurs', 'id')],
             'abonne' => ['sometimes', 'boolean'],
         ]);
 
+        $this->authorizeSectorAgency($request, (int) $validated['id_secteur']);
+
         $client = Client::create($validated);
 
-        return (new ClientResource($client->load('compteurs')))->response()->setStatusCode(201);
+        return (new ClientResource($client->load('secteur', 'compteurs')))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, Client $client): ClientResource
@@ -57,7 +64,7 @@ class ClientController extends Controller
             'Forbidden'
         );
 
-        return new ClientResource($client->load('compteurs.secteur', 'compteurs.pannes'));
+        return new ClientResource($client->load('secteur', 'compteurs.secteur', 'compteurs.pannes'));
     }
 
     public function update(Request $request, Client $client): JsonResponse
@@ -70,14 +77,22 @@ class ClientController extends Controller
             'police' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('clients', 'police')->ignore($client)],
             'nom' => ['sometimes', 'required', 'string', 'max:255'],
             'prenom' => ['nullable', 'string', 'max:255'],
+            'cin' => ['nullable', 'string', 'max:20'],
             'telephone' => ['nullable', 'string', 'max:255'],
-            'adresse' => ['nullable', 'string', 'max:255'],
+            'adresse' => ['sometimes', 'required', 'string', 'max:255'],
+            'type_abonnement' => ['sometimes', 'required', Rule::in(['domestic', 'commercial', 'industrial'])],
+            'service_type' => ['sometimes', 'required', Rule::in(['water', 'electricity'])],
+            'id_secteur' => ['sometimes', 'required', 'integer', Rule::exists('secteurs', 'id')],
             'abonne' => ['sometimes', 'boolean'],
         ]);
 
+        if (array_key_exists('id_secteur', $validated)) {
+            $this->authorizeSectorAgency($request, (int) $validated['id_secteur']);
+        }
+
         $client->update($validated);
 
-        return (new ClientResource($client->load('compteurs.secteur', 'compteurs.pannes')))->response();
+        return (new ClientResource($client->load('secteur', 'compteurs.secteur', 'compteurs.pannes')))->response();
     }
 
     public function destroy(Client $client): JsonResponse
@@ -85,5 +100,19 @@ class ClientController extends Controller
         $client->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function authorizeSectorAgency(Request $request, int $secteurId): void
+    {
+        $userAgency = $request->user()?->agence;
+
+        abort_if(! $userAgency, 403, 'User agency is required to add a client.');
+
+        $belongsToAgency = Secteur::query()
+            ->whereKey($secteurId)
+            ->where('agence', $userAgency)
+            ->exists();
+
+        abort_unless($belongsToAgency, 422, 'The selected sector does not belong to your agency.');
     }
 }

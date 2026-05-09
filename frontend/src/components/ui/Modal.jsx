@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }) {
   // Close on Escape key
   useEffect(() => {
     function handleKey(e) {
@@ -21,7 +21,7 @@ export default function Modal({ title, onClose, children }) {
       />
 
       {/* Modal card */}
-      <div className="relative bg-white rounded-2xl border border-gray-100 shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto z-10">
+      <div className={`relative bg-white rounded-2xl border border-gray-100 shadow-xl w-full ${maxWidth} max-h-[90vh] overflow-y-auto z-10`}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

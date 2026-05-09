@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nom_secteur');
             $table->enum('emplacement', ['Taza Haut', 'Taza Bas']);
+            $table->string('agence')->default('SRM-FM Taza');
             $table->string('num_torne');
             $table->timestamps();
         });

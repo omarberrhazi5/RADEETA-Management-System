@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('cadran')->unique();
             $table->enum('calibre', ['15', '20']);
             $table->string('marque')->nullable();
+            $table->enum('service_type', ['water', 'electricity'])->default('water');
             $table->decimal('index_releve', 10, 2)->default(0);
             $table->foreignId('id_client')->constrained('clients')->cascadeOnDelete();
             $table->foreignId('id_secteur')->constrained('secteurs')->restrictOnDelete();

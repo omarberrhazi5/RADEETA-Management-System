@@ -31,6 +31,7 @@ class UserFactory extends Factory
             'identifiant' => fake()->unique()->userName(),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'agence' => 'SRM-FM Taza',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'role' => UserRole::Viewer,

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { endpoints } from '../api/resources';
@@ -9,21 +10,23 @@ import Badge from '../components/ui/Badge';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
-import { canCreate } from '../utils/rbac';
+import { translateAnomaly, translateStatus } from '../utils/i18nLabels';
+import { ROLES, canCreate } from '../utils/rbac';
 
 function statusColor(status) {
   const value = String(status ?? '').toLowerCase();
-  if (['repare', 'réparé', 'resolu', 'résolue', 'resolved'].includes(value)) return 'green';
+  if (['repare', 'reparee', 'resolu', 'resolue', 'resolved'].includes(value)) return 'green';
   if (['en cours', 'in_progress'].includes(value)) return 'amber';
   return 'red';
 }
 
 export default function Pannes() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { role } = useAuth();
   const { error, items, loading, refresh } = useResource(endpoints.pannes, { limit: 500, sort: 'recent' });
   const secteurs = useResource(endpoints.secteurs, { limit: 500 });
-  const operators = useResource(endpoints.operators, { limit: 500 }, { enabled: role !== 'operator' });
+  const technicians = useResource(endpoints.technicians, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN });
   const canCreateRepair = canCreate(role, 'reparations');
   const [formState, setFormState] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -31,29 +34,26 @@ export default function Pannes() {
   const [filters, setFilters] = useState({ status: '', secteur: '', assigned: '' });
 
   const fields = useMemo(() => [
-    ...(role === 'operator' ? [] : [
-    { name: 'id_compteur', label: 'Meter ID', type: 'number', required: true },
-    { name: 'anomalie', label: 'Anomaly', required: true },
-    { name: 'date_panne', label: 'Fault date', type: 'date', required: true, defaultValue: new Date().toISOString().slice(0, 10) },
+    ...(role === ROLES.TECHNICIAN ? [] : [
+      { name: 'id_compteur', label: t('forms.meterId'), type: 'number', required: true },
+      { name: 'anomalie', label: t('forms.anomaly'), required: true },
+      { name: 'date_panne', label: t('forms.faultDate'), type: 'date', required: true, defaultValue: new Date().toISOString().slice(0, 10) },
     ]),
     {
       name: 'status',
-      label: 'Status',
+      label: t('forms.status'),
       type: 'select',
       defaultValue: 'ouvert',
       options: [
-        { value: 'ouvert', label: 'Open' },
-        { value: 'repare', label: 'Repaired' },
+        { value: 'ouvert', label: t('statuses.open') },
+        { value: 'repare', label: t('statuses.repare') },
       ],
     },
-    ...(role === 'operator' ? [] : [{ name: 'assigned_to', label: 'Assigned operator ID', type: 'number', help: 'Optional for admin/manager. Operators are assigned automatically by the backend.' }]),
-  ], [role]);
+    ...(role === ROLES.TECHNICIAN ? [] : [{ name: 'assigned_to', label: t('forms.assignedTechnicianId'), type: 'number', help: t('forms.assignedTechnicianHelp') }]),
+  ], [role, t]);
 
   async function savePanne(values) {
-    const payload = {
-      ...values,
-      assigned_to: values.assigned_to === '' ? null : values.assigned_to,
-    };
+    const payload = { ...values, assigned_to: values.assigned_to === '' ? null : values.assigned_to };
 
     if (formState?.item) {
       await api.put(`/pannes/${formState.item.id_panne ?? formState.item.id}`, payload);
@@ -82,12 +82,19 @@ export default function Pannes() {
     return matchesStatus && matchesSector && matchesAssigned;
   });
 
+  function repairsPathForRole() {
+    if (role === ROLES.DIRECTEUR || role === ROLES.RESPONSABLE) return '/admin/repairs';
+    if (role === ROLES.MANAGER) return '/manager/repairs';
+    if (role === ROLES.TECHNICIAN) return '/technician/repairs';
+    return '/access-denied';
+  }
+
   return (
     <div className="space-y-4">
       {error && <ErrorState message={error} />}
       <DataTable
-        title="Pannes"
-        subtitle="Operators only receive assigned pannes from the API."
+        title={t('pannes.title')}
+        subtitle={t('pannes.subtitle')}
         resource="pannes"
         role={role}
         loading={loading}
@@ -95,40 +102,49 @@ export default function Pannes() {
         filters={(
           <>
             <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
-              <option value="">All statuses</option>
-              <option value="open">Open</option>
-              <option value="resolved">Resolved</option>
+              <option value="">{t('common.allStatuses')}</option>
+              <option value="open">{t('statuses.open')}</option>
+              <option value="resolved">{t('statuses.resolved')}</option>
             </select>
             <select value={filters.secteur} onChange={(event) => setFilters((current) => ({ ...current, secteur: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
-              <option value="">All sectors</option>
+              <option value="">{t('common.allSectors')}</option>
               {secteurs.items.map((secteur) => <option key={secteur.id} value={secteur.id}>{secteur.nom_secteur}</option>)}
             </select>
-            {role !== 'operator' && (
+            {role !== ROLES.TECHNICIAN && (
               <select value={filters.assigned} onChange={(event) => setFilters((current) => ({ ...current, assigned: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
-                <option value="">All operators</option>
-                {operators.items.map((operator) => <option key={operator.id} value={operator.id}>{operator.prenom} {operator.nom}</option>)}
+                <option value="">{t('common.allTechnicians')}</option>
+                {technicians.items.map((technician) => <option key={technician.id} value={technician.id}>{technician.prenom} {technician.nom}</option>)}
               </select>
             )}
           </>
         )}
-        emptyMessage="No pannes found for the selected filters."
+        emptyMessage={t('pannes.empty')}
         onCreate={() => setFormState({ item: null })}
         onEdit={(item) => setFormState({ item })}
         onDelete={setDeleteTarget}
         columns={[
-          { key: 'id_panne', header: 'Panne', render: (row) => `#${row.id_panne ?? row.id}` },
-          { key: 'meter', header: 'Meter', render: (row) => row.compteur?.cadran ?? '-' },
-          { key: 'anomalie', header: 'Anomaly' },
-          { key: 'sector', header: 'Sector', render: (row) => row.compteur?.secteur?.nom_secteur ?? '-' },
-          { key: 'date_panne', header: 'Date' },
-          { key: 'assigned', header: 'Assigned', render: (row) => row.assigned_operator ? `${row.assigned_operator.nom ?? ''} ${row.assigned_operator.prenom ?? ''}`.trim() : '-' },
-          { key: 'status', header: 'Status', render: (row) => <Badge label={row.statut ?? row.status ?? 'open'} color={statusColor(row.status ?? row.statut)} /> },
+          { key: 'service_type', header: t('tables.service'), render: (row) => {
+            const serviceType = row.compteur?.service_type ?? row.service_type ?? 'water';
+            return <Badge label={t(`services.${serviceType}`)} color={serviceType === 'electricity' ? 'amber' : 'blue'} />;
+          } },
+          { key: 'meter', header: t('tables.meter'), render: (row) => row.compteur?.cadran ?? '-' },
+          { key: 'anomalie', header: t('tables.anomaly'), render: (row) => translateAnomaly(t, row.anomalie) },
+          { key: 'sector', header: t('tables.sector'), render: (row) => row.compteur?.secteur?.nom_secteur ?? '-' },
+          { key: 'date_panne', header: t('tables.date') },
+          { key: 'assigned', header: t('tables.technician'), render: (row) => {
+            const technician = row.assigned_technician ?? row.assigned_operator;
+            return technician ? `${technician.nom ?? ''} ${technician.prenom ?? ''}`.trim() : '-';
+          } },
+          { key: 'status', header: t('tables.status'), render: (row) => {
+            const value = String(row.statut ?? row.status ?? 'open').toLowerCase();
+            return <Badge label={translateStatus(t, value)} color={statusColor(value)} />;
+          } },
           ...(canCreateRepair ? [{
             key: 'repair',
-            header: 'Repair',
+            header: t('tables.intervention'),
             render: (row) => (
-              <button type="button" onClick={() => navigate('../reparations', { state: { panne: row } })} className="text-xs font-semibold text-blue-700 hover:underline">
-                Create repair
+              <button type="button" onClick={() => navigate(repairsPathForRole(), { state: { panne: row } })} className="text-xs font-semibold text-emerald-700 hover:underline">
+                {t('tables.intervention')}
               </button>
             ),
           }] : []),
@@ -136,17 +152,17 @@ export default function Pannes() {
       />
       {formState && (
         <EntityFormModal
-          title={formState.item ? 'Edit Panne' : 'Add Panne'}
+          title={formState.item ? t('pannes.edit') : t('pannes.add')}
           fields={fields}
           initialItem={formState.item}
-          submitLabel={formState.item ? 'Save changes' : 'Create panne'}
+          submitLabel={formState.item ? t('buttons.saveChanges') : t('pannes.create')}
           onClose={() => setFormState(null)}
           onSubmit={savePanne}
         />
       )}
       {deleteTarget && (
         <ConfirmDialog
-          message={`Delete panne #${deleteTarget.id_panne ?? deleteTarget.id}? This action cannot be undone.`}
+          message={t('pannes.deleteConfirm', { id: deleteTarget.id_panne ?? deleteTarget.id })}
           onConfirm={() => deletePanne(deleteTarget)}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}

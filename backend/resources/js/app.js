@@ -82,7 +82,7 @@ function Navbar({ onMenuClick, onLogout, user }) {
                     </button>
                     <div>
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">SRM-FM Taza</p>
-                        <h1 className="text-lg font-bold text-slate-950">Gestion de Secteur</h1>
+                        <h1 className="text-lg font-bold text-slate-950">Gestion de Reclamation</h1>
                     </div>
                 </div>
 
@@ -134,7 +134,7 @@ function Dashboard() {
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blue-300">Pilotage opérationnel</p>
-                        <h2 className="mt-3 text-3xl font-extrabold tracking-normal">Gestion de Secteur - SRM-FM Taza</h2>
+                        <h2 className="mt-3 text-3xl font-extrabold tracking-normal">Gestion de Reclamation - SRM-FM</h2>
                         <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
                             Supervision des secteurs, abonnés, compteurs et interventions avec accès sécurisé par rôle.
                         </p>

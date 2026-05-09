@@ -22,10 +22,12 @@ class PanneResource extends JsonResource
             'status' => $status,
             'statut' => $status === PanneStatus::Resolved->value ? 'résolue' : 'ouverte',
             'assigned_to' => $this->assigned_to,
+            'assigned_technician' => new UserResource($this->whenLoaded('assignedOperator')),
             'assigned_operator' => new UserResource($this->whenLoaded('assignedOperator')),
             'description' => null,
             'compteur' => new CompteurResource($this->whenLoaded('compteur')),
             'reparations' => ReparationResource::collection($this->whenLoaded('reparations')),
+            'interventions' => InterventionResource::collection($this->whenLoaded('interventions')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

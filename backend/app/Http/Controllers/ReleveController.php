@@ -17,7 +17,7 @@ class ReleveController extends Controller
     {
         $limit = min((int) $request->integer('limit', 15), 500);
 
-        $query = Releve::with('compteur.client', 'compteur.secteur', 'facture', 'creator')->latest();
+        $query = Releve::with('compteur.client', 'compteur.secteur', 'creator')->latest();
 
         if (OperatorAccess::isOperator($request->user())) {
             OperatorAccess::scopeReleves($query, $request->user());
@@ -25,10 +25,6 @@ class ReleveController extends Controller
 
         if ($request->filled('compteur_id')) {
             $query->where('compteur_id', $request->integer('compteur_id'));
-        }
-
-        if ($request->boolean('unbilled')) {
-            $query->doesntHave('facture');
         }
 
         return ReleveResource::collection($query->paginate($limit));
@@ -72,8 +68,6 @@ class ReleveController extends Controller
     {
         $this->authorizeOperatorReleveAccess($request, $releve);
 
-        abort_if($releve->facture()->exists(), 403, 'Validated invoiced readings cannot be modified.');
-
         $validated = $request->validate([
             'ancien_index' => ['sometimes', 'required', 'numeric', 'min:0'],
             'nouvel_index' => ['sometimes', 'required', 'numeric', 'min:0'],
@@ -94,14 +88,14 @@ class ReleveController extends Controller
         $releve->update($validated);
         $releve->compteur?->update(['index_releve' => max((float) $releve->compteur?->index_releve, (float) $releve->nouvel_index)]);
 
-        return (new ReleveResource($releve->load('compteur.client', 'compteur.secteur', 'facture', 'creator')))->response();
+        return (new ReleveResource($releve->load('compteur.client', 'compteur.secteur', 'creator')))->response();
     }
 
     public function show(Request $request, Releve $releve): ReleveResource
     {
         $this->authorizeOperatorReleveAccess($request, $releve);
 
-        return new ReleveResource($releve->load('compteur.client', 'compteur.secteur', 'facture', 'creator'));
+        return new ReleveResource($releve->load('compteur.client', 'compteur.secteur', 'creator'));
     }
 
     private function authorizeOperatorReleveAccess(Request $request, Releve $releve): void

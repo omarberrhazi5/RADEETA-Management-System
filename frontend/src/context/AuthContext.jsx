@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { clearStoredAuth, ROLE_KEY, TOKEN_KEY, USER_KEY } from '../api/axios';
-import { dashboardPathFor, isDeveloperEnabled } from '../utils/rbac';
+import { dashboardPathFor, isDeveloperEnabled, isKnownRole } from '../utils/rbac';
 
 const AuthContext = createContext(null);
 
@@ -28,21 +28,75 @@ export function AuthProvider({ children }) {
   const [booting, setBooting] = useState(true);
 
   useEffect(() => {
-    if (token && user && role && isDeveloperEnabled(role)) {
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      localStorage.setItem(ROLE_KEY, role);
-    }
+    let cancelled = false;
 
-    if (role && !isDeveloperEnabled(role)) {
+    async function boot() {
+      if (role && !isKnownRole(role)) {
+        clearStoredAuth();
+        if (!cancelled) {
+          setToken(null);
+          setUser(null);
+          setRole(null);
+          setBooting(false);
+        }
+        return;
+      }
+
+      if (role && !isDeveloperEnabled(role)) {
+        clearStoredAuth();
+        if (!cancelled) {
+          setToken(null);
+          setUser(null);
+          setRole(null);
+          setBooting(false);
+        }
+        return;
+      }
+
+      if (token && role) {
+        try {
+          const response = await api.get('/me');
+          const normalized = normalizeUser(response.data);
+
+          if (!normalized.role || !isDeveloperEnabled(normalized.role)) {
+            throw new Error('Authenticated role is not valid.');
+          }
+
+          if (!cancelled) {
+            localStorage.setItem(TOKEN_KEY, token);
+            localStorage.setItem(USER_KEY, JSON.stringify(normalized.user));
+            localStorage.setItem(ROLE_KEY, normalized.role);
+            setUser(normalized.user);
+            setRole(normalized.role);
+            setBooting(false);
+          }
+        } catch {
+          clearStoredAuth();
+          if (!cancelled) {
+            setToken(null);
+            setUser(null);
+            setRole(null);
+            setBooting(false);
+          }
+        }
+        return;
+      }
+
       clearStoredAuth();
-      setToken(null);
-      setUser(null);
-      setRole(null);
+      if (!cancelled) {
+        setToken(null);
+        setUser(null);
+        setRole(null);
+        setBooting(false);
+      }
     }
 
-    setBooting(false);
-  }, [token, user, role]);
+    boot();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, role]);
 
   useEffect(() => {
     function expire() {
@@ -65,8 +119,9 @@ export function AuthProvider({ children }) {
     const authToken = response.data.token;
     const normalized = normalizeUser(response.data);
 
-    if (!isDeveloperEnabled(normalized.role)) {
-      throw new Error('Developer access is disabled in production.');
+    if (!normalized.role || !isDeveloperEnabled(normalized.role)) {
+      clearStoredAuth();
+      throw new Error('This role is no longer valid. Please contact the administrator.');
     }
 
     localStorage.setItem(TOKEN_KEY, authToken);

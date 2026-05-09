@@ -26,6 +26,7 @@ class SecteurFactory extends Factory
                 'Sidi Azouz',
             ]),
             'emplacement' => fake()->randomElement(['Taza Haut', 'Taza Bas']),
+            'agence' => 'SRM-FM Taza',
             'num_torne' => fake()->unique()->bothify('T-###'),
             'latitude' => fake()->randomFloat(8, 34.21, 34.24),
             'longitude' => fake()->randomFloat(8, -4.02, -3.97),

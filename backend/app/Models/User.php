@@ -27,6 +27,7 @@ class User extends Authenticatable
         'identifiant',
         'name',
         'email',
+        'agence',
         'password',
         'role',
     ];
@@ -58,6 +59,11 @@ class User extends Authenticatable
     public function reparations(): HasMany
     {
         return $this->hasMany(Reparation::class, 'id_plombier');
+    }
+
+    public function interventions(): HasMany
+    {
+        return $this->hasMany(Intervention::class, 'technician_id');
     }
 
     public function assignedPannes(): HasMany

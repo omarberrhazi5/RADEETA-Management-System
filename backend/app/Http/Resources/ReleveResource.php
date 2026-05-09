@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Support\OperatorAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,7 +19,6 @@ class ReleveResource extends JsonResource
             'periode_fin' => $this->periode_fin?->toDateString(),
             'created_by' => $this->created_by,
             'compteur' => new CompteurResource($this->whenLoaded('compteur')),
-            'facture' => OperatorAccess::isOperator($request->user()) ? null : new FactureResource($this->whenLoaded('facture')),
             'creator' => new UserResource($this->whenLoaded('creator')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

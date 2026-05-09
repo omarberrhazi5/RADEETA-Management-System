@@ -16,6 +16,7 @@ class Compteur extends Model
         'cadran',
         'calibre',
         'marque',
+        'service_type',
         'index_releve',
         'id_client',
         'id_secteur',
@@ -46,11 +47,6 @@ class Compteur extends Model
     public function releves(): HasMany
     {
         return $this->hasMany(Releve::class);
-    }
-
-    public function factures(): HasMany
-    {
-        return $this->hasMany(Facture::class);
     }
 
     protected static function booted(): void

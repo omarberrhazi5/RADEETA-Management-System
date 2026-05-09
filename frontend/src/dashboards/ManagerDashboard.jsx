@@ -1,21 +1,21 @@
 import { DashboardFrame, useDashboardData } from './DashboardShared';
+import { useTranslation } from 'react-i18next';
 
 export default function ManagerDashboard() {
-  const { factures, stats, pannes, releves, reparations, secteurs } = useDashboardData();
+  const { t } = useTranslation();
+  const { interventions, stats, pannes, secteurs } = useDashboardData();
 
   return (
     <DashboardFrame
-      title="Manager Dashboard"
-      subtitle="Supervise active operations, approve progress, and monitor service quality."
+      title={t('dashboard.manager')}
+      subtitle={t('dashboard.managerSubtitle')}
       stats={stats.data}
       pannes={pannes.items}
-      releves={releves.items}
-      factures={factures.items}
-      reparations={reparations.items}
+      interventions={interventions.items}
       secteurs={secteurs.items}
-      loading={stats.loading || pannes.loading || secteurs.loading || releves.loading || factures.loading || reparations.loading}
-      error={stats.error || pannes.error || secteurs.error || releves.error || factures.error || reparations.error}
-      mapTitle="Supervision map"
+      loading={stats.loading || pannes.loading || secteurs.loading || interventions.loading}
+      error={stats.error || pannes.error || secteurs.error || interventions.error}
+      mapTitle={t('dashboard.supervisionMap')}
     />
   );
 }

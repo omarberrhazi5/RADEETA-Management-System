@@ -92,7 +92,7 @@
 </head>
 <body>
     <div class="header">
-        <h1 class="title">RADEETA - Gestion de Secteur</h1>
+        <h1 class="title">SRM-FM - Gestion de Reclamation</h1>
         <p class="subtitle">Rapport des Pannes du Mois - {{ $period->translatedFormat('F Y') }}</p>
     </div>
 
@@ -102,6 +102,10 @@
         <strong>Ouvertes:</strong> {{ $pannes->where('status.value', 'open')->count() }}
         &nbsp; | &nbsp;
         <strong>Resolues:</strong> {{ $pannes->where('status.value', 'resolved')->count() }}
+        &nbsp; | &nbsp;
+        <strong>Eau:</strong> {{ $pannes->filter(fn ($panne) => $panne->compteur?->service_type === 'water')->count() }}
+        &nbsp; | &nbsp;
+        <strong>Electricite:</strong> {{ $pannes->filter(fn ($panne) => $panne->compteur?->service_type === 'electricity')->count() }}
     </div>
 
     <table>
@@ -110,6 +114,7 @@
                 <th>#</th>
                 <th>Date</th>
                 <th>Compteur</th>
+                <th>Service</th>
                 <th>Client</th>
                 <th>Secteur</th>
                 <th>Anomalie</th>
@@ -129,6 +134,7 @@
                     <td>{{ $panne->id }}</td>
                     <td>{{ $panne->date_panne?->format('d/m/Y') }}</td>
                     <td>{{ $panne->compteur?->cadran ?? '-' }}</td>
+                    <td>{{ $panne->compteur?->service_type === 'electricity' ? 'Electricite' : 'Eau' }}</td>
                     <td>
                         {{ trim(($panne->compteur?->client?->nom ?? '').' '.($panne->compteur?->client?->prenom ?? '')) ?: '-' }}
                         <div class="muted">{{ $panne->compteur?->client?->police }}</div>
@@ -150,7 +156,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="muted">Aucune panne trouvee pour ce mois.</td>
+                    <td colspan="9" class="muted">Aucune panne trouvee pour ce mois.</td>
                 </tr>
             @endforelse
         </tbody>

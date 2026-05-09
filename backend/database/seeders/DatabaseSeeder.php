@@ -7,16 +7,12 @@ use App\Enums\PanneStatus;
 use App\Enums\UserRole;
 use App\Models\Client;
 use App\Models\Compteur;
-use App\Models\Facture;
-use App\Models\Paiement;
 use App\Models\Panne;
 use App\Models\Releve;
 use App\Models\Reparation;
 use App\Models\Secteur;
 use App\Models\User;
 use App\Notifications\UtilityNotification;
-use App\Services\BillingService;
-use App\Services\TariffService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -25,36 +21,28 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->seedTariffs();
         $users = $this->seedUsers();
         $secteurs = $this->seedSecteurs();
         $clients = $this->seedClients($secteurs);
         $compteurs = $this->seedCompteurs($clients, $secteurs);
-        $releves = $this->seedReleves($compteurs, $users['operators']);
-        $factures = $this->seedFactures($releves);
-        $this->seedPaiements($factures, $users['admin']);
+        $this->seedReleves($compteurs, $users['operators']);
         $pannes = $this->seedPannes($compteurs, $users['operators']);
+        $this->call(InterventionSeeder::class);
         $this->seedReparations($pannes, $users['operators']);
-        $this->seedNotifications($users, $pannes, $factures);
-    }
-
-    private function seedTariffs(): void
-    {
-        $tariffs = app(TariffService::class);
-        $tariffs->update($tariffs->defaults());
+        $this->seedNotifications($users, $pannes);
     }
 
     private function seedUsers(): array
     {
         $rows = [
-            ['key' => 'super_admin', 'nom' => 'Alaoui', 'prenom' => 'Ahmed', 'identifiant' => 'ahmed.alaoui', 'email' => 'ahmed.alaoui@srm-taza.ma', 'role' => UserRole::SuperAdmin],
-            ['key' => 'admin', 'nom' => 'Tahiri', 'prenom' => 'Yassine', 'identifiant' => 'yassine.tahiri', 'email' => 'yassine.tahiri@srm-taza.ma', 'role' => UserRole::Admin],
+            ['key' => 'directeur', 'nom' => 'Alaoui', 'prenom' => 'Ahmed', 'identifiant' => 'ahmed.alaoui', 'email' => 'ahmed.alaoui@srm-fm.ma', 'role' => UserRole::Directeur],
+            ['key' => 'responsable', 'nom' => 'Tahiri', 'prenom' => 'Yassine', 'identifiant' => 'yassine.tahiri', 'email' => 'yassine.tahiri@srm-fm.ma', 'role' => UserRole::Responsable],
             ['key' => 'manager', 'nom' => 'Idrissi', 'prenom' => 'Salma', 'identifiant' => 'salma.idrissi', 'email' => 'salma.idrissi@srm-taza.ma', 'role' => UserRole::Manager],
             ['key' => 'viewer', 'nom' => 'Benjelloun', 'prenom' => 'Omar', 'identifiant' => 'omar.benjelloun', 'email' => 'omar.benjelloun@srm-taza.ma', 'role' => UserRole::Viewer],
-            ['key' => 'op_qods', 'nom' => 'El Fassi', 'prenom' => 'Younes', 'identifiant' => 'younes.elfassi', 'email' => 'younes.elfassi@srm-taza.ma', 'role' => UserRole::Operator],
-            ['key' => 'op_taza_haut', 'nom' => 'Bennani', 'prenom' => 'Hamza', 'identifiant' => 'hamza.bennani', 'email' => 'hamza.bennani@srm-taza.ma', 'role' => UserRole::Operator],
-            ['key' => 'op_taza_bas', 'nom' => 'Chakir', 'prenom' => 'Nadia', 'identifiant' => 'nadia.chakir', 'email' => 'nadia.chakir@srm-taza.ma', 'role' => UserRole::Operator],
-            ['key' => 'op_indus', 'nom' => 'Amrani', 'prenom' => 'Rachid', 'identifiant' => 'rachid.amrani', 'email' => 'rachid.amrani@srm-taza.ma', 'role' => UserRole::Operator],
+            ['key' => 'tech_qods', 'nom' => 'El Fassi', 'prenom' => 'Younes', 'identifiant' => 'younes.elfassi', 'email' => 'younes.elfassi@srm-fm.ma', 'role' => UserRole::Technician],
+            ['key' => 'tech_taza_haut', 'nom' => 'Bennani', 'prenom' => 'Hamza', 'identifiant' => 'hamza.bennani', 'email' => 'hamza.bennani@srm-fm.ma', 'role' => UserRole::Technician],
+            ['key' => 'tech_taza_bas', 'nom' => 'Chakir', 'prenom' => 'Nadia', 'identifiant' => 'nadia.chakir', 'email' => 'nadia.chakir@srm-fm.ma', 'role' => UserRole::Technician],
+            ['key' => 'tech_indus', 'nom' => 'Amrani', 'prenom' => 'Rachid', 'identifiant' => 'rachid.amrani', 'email' => 'rachid.amrani@srm-fm.ma', 'role' => UserRole::Technician],
         ];
 
         $users = collect($rows)->mapWithKeys(function (array $row): array {
@@ -63,6 +51,7 @@ class DatabaseSeeder extends Seeder
                 'prenom' => $row['prenom'],
                 'name' => $row['prenom'].' '.$row['nom'],
                 'email' => $row['email'],
+                'agence' => 'SRM-FM Taza',
                 'password' => Hash::make('password'),
                 'role' => $row['role'],
             ]);
@@ -72,23 +61,23 @@ class DatabaseSeeder extends Seeder
 
         return [
             ...$users->all(),
-            'operators' => $users->only(['op_qods', 'op_taza_haut', 'op_taza_bas', 'op_indus'])->values(),
+            'operators' => $users->only(['tech_qods', 'tech_taza_haut', 'tech_taza_bas', 'tech_indus'])->values(),
         ];
     }
 
     private function seedSecteurs()
     {
         $rows = [
-            ['nom_secteur' => 'Taza Haut', 'emplacement' => 'Taza Haut', 'num_torne' => 'SRM-TH-001', 'latitude' => 34.2208, 'longitude' => -4.0082],
-            ['nom_secteur' => 'Taza Bas', 'emplacement' => 'Taza Bas', 'num_torne' => 'SRM-TB-002', 'latitude' => 34.2244, 'longitude' => -4.0170],
-            ['nom_secteur' => 'Qods 1', 'emplacement' => 'Taza Haut', 'num_torne' => 'SRM-QD1-003', 'latitude' => 34.2261, 'longitude' => -3.9947],
-            ['nom_secteur' => 'Qods 2', 'emplacement' => 'Taza Haut', 'num_torne' => 'SRM-QD2-004', 'latitude' => 34.2280, 'longitude' => -3.9918],
-            ['nom_secteur' => 'Hay Amal', 'emplacement' => 'Taza Bas', 'num_torne' => 'SRM-HA-005', 'latitude' => 34.2318, 'longitude' => -3.9869],
-            ['nom_secteur' => 'Hay Ennahda', 'emplacement' => 'Taza Bas', 'num_torne' => 'SRM-HN-006', 'latitude' => 34.2362, 'longitude' => -3.9799],
-            ['nom_secteur' => 'Sidi Azouz', 'emplacement' => 'Taza Bas', 'num_torne' => 'SRM-SA-007', 'latitude' => 34.2147, 'longitude' => -4.0158],
-            ['nom_secteur' => 'Moulay Rachid', 'emplacement' => 'Taza Haut', 'num_torne' => 'SRM-MR-008', 'latitude' => 34.2284, 'longitude' => -3.9878],
-            ['nom_secteur' => 'Zone Industrielle', 'emplacement' => 'Taza Bas', 'num_torne' => 'SRM-ZI-009', 'latitude' => 34.2401, 'longitude' => -3.9705],
-            ['nom_secteur' => 'Gare Taza', 'emplacement' => 'Taza Bas', 'num_torne' => 'SRM-GT-010', 'latitude' => 34.2237, 'longitude' => -4.0112],
+            ['nom_secteur' => 'Taza Haut', 'emplacement' => 'Taza Haut', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-TH-001', 'latitude' => 34.2208, 'longitude' => -4.0082],
+            ['nom_secteur' => 'Taza Bas', 'emplacement' => 'Taza Bas', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-TB-002', 'latitude' => 34.2244, 'longitude' => -4.0170],
+            ['nom_secteur' => 'Qods 1', 'emplacement' => 'Taza Haut', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-QD1-003', 'latitude' => 34.2261, 'longitude' => -3.9947],
+            ['nom_secteur' => 'Qods 2', 'emplacement' => 'Taza Haut', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-QD2-004', 'latitude' => 34.2280, 'longitude' => -3.9918],
+            ['nom_secteur' => 'Hay Amal', 'emplacement' => 'Taza Bas', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-HA-005', 'latitude' => 34.2318, 'longitude' => -3.9869],
+            ['nom_secteur' => 'Hay Ennahda', 'emplacement' => 'Taza Bas', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-HN-006', 'latitude' => 34.2362, 'longitude' => -3.9799],
+            ['nom_secteur' => 'Sidi Azouz', 'emplacement' => 'Taza Bas', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-SA-007', 'latitude' => 34.2147, 'longitude' => -4.0158],
+            ['nom_secteur' => 'Moulay Rachid', 'emplacement' => 'Taza Haut', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-MR-008', 'latitude' => 34.2284, 'longitude' => -3.9878],
+            ['nom_secteur' => 'Zone Industrielle', 'emplacement' => 'Taza Bas', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-ZI-009', 'latitude' => 34.2401, 'longitude' => -3.9705],
+            ['nom_secteur' => 'Gare Taza', 'emplacement' => 'Taza Bas', 'agence' => 'SRM-FM Taza', 'num_torne' => 'SRM-GT-010', 'latitude' => 34.2237, 'longitude' => -4.0112],
         ];
 
         return collect($rows)->map(fn (array $row): Secteur => Secteur::updateOrCreate(['num_torne' => $row['num_torne']], $row))->values();
@@ -106,12 +95,15 @@ class DatabaseSeeder extends Seeder
             $nom = $lastNames[(int) floor(($i - 1) / 2) % count($lastNames)];
             $cinPrefix = ['AB', 'CB', 'D', 'F', 'G', 'H'][($i - 1) % 6];
 
-            return Client::updateOrCreate(['police' => 'SRM-'.str_pad((string) (240000 + $i), 6, '0', STR_PAD_LEFT)], [
+            return Client::updateOrCreate(['police' => '000'.str_pad((string) (2400000 + $i), 7, '0', STR_PAD_LEFT)], [
                 'nom' => $nom,
                 'prenom' => $prenom,
                 'cin' => $cinPrefix.str_pad((string) (12500 + $i * 37), 6, '0', STR_PAD_LEFT),
                 'telephone' => '06'.str_pad((string) (11000000 + $i * 32741), 8, '0', STR_PAD_LEFT),
-                'adresse' => $streets[($i - 1) % count($streets)].' n '.$i.', '.$secteur->nom_secteur.', Taza',
+                'adresse' => $streets[($i - 1) % count($streets)],
+                'type_abonnement' => $secteur->nom_secteur === 'Zone Industrielle' ? 'industrial' : (($i % 7 === 0) ? 'commercial' : 'domestic'),
+                'service_type' => $i % 5 === 0 ? 'electricity' : 'water',
+                'id_secteur' => $secteur->id,
                 'abonne' => $i % 19 !== 0,
             ]);
         })->values();
@@ -126,6 +118,7 @@ class DatabaseSeeder extends Seeder
             return Compteur::updateOrCreate(['cadran' => 'SRM'.now()->format('y').'TZ'.str_pad((string) ($index + 1), 6, '0', STR_PAD_LEFT)], [
                 'calibre' => $isBusiness ? '20' : '15',
                 'marque' => ['Itron', 'Sagemcom', 'Landis+Gyr', 'Elster'][($index) % 4],
+                'service_type' => $client->service_type,
                 'index_releve' => 0,
                 'id_client' => $client->id,
                 'id_secteur' => $secteur->id,
@@ -172,62 +165,6 @@ class DatabaseSeeder extends Seeder
         });
 
         return $created;
-    }
-
-    private function seedFactures($releves)
-    {
-        $billing = app(BillingService::class);
-        $factures = collect();
-
-        $releves->each(function (Releve $releve, int $index) use ($billing, $factures): void {
-            $isLatestReadingForMeter = $index % 6 === 5;
-            $meterPosition = intdiv($index, 6);
-            $leaveForManualBilling = $isLatestReadingForMeter && $meterPosition % 3 === 0;
-
-            if ($leaveForManualBilling) {
-                $releve->facture?->delete();
-
-                return;
-            }
-
-            $dueDate = $releve->periode_fin->copy()->addDays(20)->toDateString();
-            $facture = $billing->generateInvoice($releve->load('compteur.client'), $dueDate);
-            $facture->forceFill([
-                'generated_at' => $releve->periode_fin->copy()->addDays(3),
-                'created_at' => $releve->periode_fin->copy()->addDays(3),
-                'updated_at' => $releve->periode_fin->copy()->addDays(3),
-            ])->save();
-
-            $factures->push($facture->refresh());
-        });
-
-        return $factures;
-    }
-
-    private function seedPaiements($factures, User $collector): void
-    {
-        $factures->each(function (Facture $facture, int $index) use ($collector): void {
-            $mode = ['cash', 'bank_transfer', 'mobile', 'cheque'][$index % 4];
-
-            if ($index % 10 === 0) {
-                return;
-            }
-
-            $amount = (float) $facture->total_ttc;
-            if ($index % 7 === 0) {
-                $amount = round($amount * 0.45, 2);
-            }
-
-            Paiement::updateOrCreate([
-                'facture_id' => $facture->id,
-                'reference' => 'PAY-'.$facture->reference,
-            ], [
-                'montant' => $amount,
-                'mode' => $mode,
-                'paid_at' => $facture->generated_at?->copy()->addDays(($index % 7) + 2) ?? now(),
-                'created_by' => $collector->id,
-            ]);
-        });
     }
 
     private function seedPannes($compteurs, $operators)
@@ -277,14 +214,12 @@ class DatabaseSeeder extends Seeder
         });
     }
 
-    private function seedNotifications(array $users, $pannes, $factures): void
+    private function seedNotifications(array $users, $pannes): void
     {
-        $recipients = collect([$users['super_admin'], $users['admin'], $users['manager'], $users['viewer']])->merge($users['operators'])->unique('id')->values();
+        $recipients = collect([$users['directeur'], $users['responsable'], $users['manager'], $users['viewer']])->merge($users['operators'])->unique('id')->values();
 
         $events = collect()
-            ->merge($pannes->take(8)->map(fn (Panne $panne): array => ['Panne assigned', 'Panne #'.$panne->id.' assigned in '.$panne->compteur?->secteur?->nom_secteur, 'panne_assigned']))
-            ->merge($factures->take(8)->map(fn (Facture $facture): array => ['Invoice generated', 'Invoice '.$facture->reference.' generated for '.$facture->client?->nom, 'facture_generated']))
-            ->merge($factures->filter(fn (Facture $facture): bool => (float) $facture->paid_amount > 0)->take(8)->map(fn (Facture $facture): array => ['Payment received', 'Payment recorded for invoice '.$facture->reference, 'paiement_received']));
+            ->merge($pannes->take(16)->map(fn (Panne $panne): array => ['Panne assigned', 'Panne #'.$panne->id.' assigned in '.$panne->compteur?->secteur?->nom_secteur, 'panne_assigned']));
 
         $events->values()->each(function (array $event, int $index) use ($recipients): void {
             $recipient = $recipients[$index % $recipients->count()];

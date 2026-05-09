@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -18,6 +19,9 @@ class Client extends Model
         'cin',
         'telephone',
         'adresse',
+        'type_abonnement',
+        'service_type',
+        'id_secteur',
         'abonne',
     ];
 
@@ -33,9 +37,9 @@ class Client extends Model
         return $this->hasMany(Compteur::class, 'id_client');
     }
 
-    public function factures(): HasMany
+    public function secteur(): BelongsTo
     {
-        return $this->hasMany(Facture::class);
+        return $this->belongsTo(Secteur::class, 'id_secteur')->withTrashed();
     }
 
     protected static function booted(): void

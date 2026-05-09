@@ -51,7 +51,7 @@ class NotificationController extends Controller
         $user = $request->user();
         $role = $user?->role instanceof UserRole ? $user->role->value : $user?->role;
 
-        if (in_array($role, [UserRole::SuperAdmin->value, UserRole::Admin->value], true)) {
+        if (in_array($role, [UserRole::Directeur->value, UserRole::Responsable->value], true)) {
             return DatabaseNotification::query();
         }
 

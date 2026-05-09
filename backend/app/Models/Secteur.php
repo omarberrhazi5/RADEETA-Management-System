@@ -15,6 +15,7 @@ class Secteur extends Model
     protected $fillable = [
         'nom_secteur',
         'emplacement',
+        'agence',
         'num_torne',
         'latitude',
         'longitude',

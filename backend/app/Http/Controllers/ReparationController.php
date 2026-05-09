@@ -102,7 +102,7 @@ class ReparationController extends Controller
         $role = $request->user()?->role;
         $value = $role instanceof UserRole ? $role->value : $role;
 
-        return $value === UserRole::Operator->value;
+        return $value === UserRole::Technician->value;
     }
 
     private function authorizeOperatorReparationAccess(Request $request, Reparation $reparation): void

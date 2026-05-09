@@ -24,7 +24,7 @@ class PanneFactory extends Factory
             'date_panne' => fake()->dateTimeBetween('-6 months', 'now')->format('Y-m-d'),
             'anomalie' => fake()->randomElement(PanneAnomalie::cases()),
             'status' => PanneStatus::Open,
-            'assigned_to' => User::factory()->state(['role' => UserRole::Operator]),
+            'assigned_to' => User::factory()->state(['role' => UserRole::Technician]),
         ];
     }
 }

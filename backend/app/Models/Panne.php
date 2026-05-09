@@ -45,6 +45,11 @@ class Panne extends Model
         return $this->hasMany(Reparation::class, 'id_panne');
     }
 
+    public function interventions(): HasMany
+    {
+        return $this->hasMany(Intervention::class, 'panne_id');
+    }
+
     public function assignedOperator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
@@ -55,11 +60,13 @@ class Panne extends Model
         static::deleting(function (Panne $panne): void {
             if (! $panne->isForceDeleting()) {
                 $panne->reparations()->delete();
+                $panne->interventions()->delete();
             }
         });
 
         static::restoring(function (Panne $panne): void {
             $panne->reparations()->withTrashed()->restore();
+            $panne->interventions()->withTrashed()->restore();
         });
     }
 }
