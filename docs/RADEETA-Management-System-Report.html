@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Rapport RADEETA Management System</title>
+  <style>
+    @page {
+      margin: 58px 42px 72px 42px;
+    }
+
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      color: #1f2937;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .footer {
+      position: fixed;
+      bottom: -50px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: #6b7280;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 8px;
+    }
+
+    .footer .page:after {
+      content: counter(page) " / " counter(pages);
+    }
+
+    .cover {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 18px;
+      padding: 28px 30px;
+      margin-bottom: 24px;
+    }
+
+    .cover .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      font-size: 10px;
+      color: #93c5fd;
+      margin-bottom: 12px;
+    }
+
+    .cover h1 {
+      margin: 0 0 10px 0;
+      font-size: 28px;
+      line-height: 1.2;
+      color: #ffffff;
+    }
+
+    .cover p {
+      margin: 0;
+      font-size: 13px;
+      color: #dbeafe;
+    }
+
+    .meta-table,
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px 0;
+    }
+
+    .meta-table td {
+      border: 1px solid #dbe4f0;
+      padding: 10px 12px;
+      vertical-align: top;
+      background: #f8fafc;
+      width: 50%;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 0 0 12px 0;
+      color: #0f172a;
+      border-bottom: 2px solid #dbeafe;
+      padding-bottom: 6px;
+    }
+
+    h3 {
+      font-size: 14px;
+      margin: 18px 0 8px 0;
+      color: #1d4ed8;
+    }
+
+    p {
+      margin: 8px 0;
+    }
+
+    ul,
+    ol {
+      margin: 8px 0 14px 20px;
+      padding: 0;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    table {
+      border: 1px solid #d1d5db;
+    }
+
+    th {
+      background: #eff6ff;
+      color: #1e3a8a;
+      text-align: left;
+      font-size: 11px;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+    }
+
+    td {
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      vertical-align: top;
+    }
+
+    code {
+      background: #eef2ff;
+      color: #1e3a8a;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: DejaVu Sans Mono, monospace;
+      font-size: 11px;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 10.5px;
+      line-height: 1.45;
+      margin: 12px 0 8px 0;
+    }
+
+    .code-caption {
+      margin-top: 0;
+      font-size: 11px;
+      color: #475569;
+    }
+
+    .note {
+      background: #f8fafc;
+      border-left: 4px solid #3b82f6;
+      padding: 10px 12px;
+      margin: 12px 0 18px 0;
+      color: #334155;
+    }
+
+    .toc {
+      margin: 0 0 18px 18px;
+    }
+
+    .toc li {
+      margin: 5px 0;
+    }
+
+    .toc a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .page-break-before {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+  <div class="footer">
+    Rapport d'analyse du code source - RADEETA Management System - Page <span class="page"></span>
+  </div>
+
+  <div class="cover">
+    <div class="eyebrow">Rapport d'analyse du code source</div>
+    <h1>RADEETA Management System</h1>
+    <p>Application web de gestion des operations terrain, de la facturation et du pilotage de service pour SRM Taza/Region.</p>
+  </div>
+
+  <table class="meta-table">
+    <tr>
+      <td><strong>Date de génération</strong><br>03/05/2026 18:59</td>
+      <td><strong>Sources analysées</strong><br><code>frontend/</code> et <code>backend/</code></td>
+    </tr>
+    <tr>
+      <td><strong>Stack observée</strong><br>React + Vite / Laravel + Sanctum / MySQL</td>
+      <td><strong>Type de document</strong><br>Rapport technique de présentation orienté métier</td>
+    </tr>
+  </table>
+
+  <div class="note">
+    Analyse réalisée uniquement à partir du code source disponible dans le dépôt. Le rapport décrit l’architecture, les flux, les composants et la logique métier réellement visibles dans les fichiers.
+  </div>
+
+  <h2>Sommaire</h2>
+  <ul class="toc">
+  <li><a href="#1-pr-sentation-du-projet">1. Présentation du projet</a></li>
+  <li><a href="#2-technologies-utilis-es">2. Technologies utilisées</a></li>
+  <li><a href="#3-architecture">3. Architecture</a></li>
+  <li><a href="#4-structure-des-dossiers">4. Structure des dossiers</a></li>
+  <li><a href="#5-fonctionnalit-s-principales">5. Fonctionnalités principales</a></li>
+  <li><a href="#6-partie-frontend">6. Partie Frontend</a></li>
+  <li><a href="#7-partie-backend">7. Partie Backend</a></li>
+  <li><a href="#8-api-endpoints">8. API (endpoints)</a></li>
+  <li><a href="#9-base-de-donn-es">9. Base de données</a></li>
+  <li><a href="#10-authentification-et-r-les">10. Authentification et rôles</a></li>
+  <li><a href="#11-workflow-de-l-application">11. Workflow de l’application</a></li>
+  <li><a href="#12-exemples-de-code-importants">12. Exemples de code importants</a></li>
+  <li><a href="#13-conclusion">13. Conclusion</a></li>
+</ul>
+
+
+  <section class="section" id="1-pr-sentation-du-projet"><h2>1. Présentation du projet</h2><p>Ce document a été préparé à partir de l’analyse du code source du projet <code>RADEETA-Management-System</code>, sans modifier le code applicatif. Le produit exposé au travers du frontend porte le nom <code>SRM Taza/Region</code> et se présente comme une plateforme de gestion des opérations d’un service d’eau et d’assainissement.</p>
+<h3>Objectif du projet</h3>
+<ul>
+  <li>Centraliser dans une seule application la gestion des abonnés, des compteurs, des secteurs, des pannes, des réparations, des relevés, des factures et des paiements.</li>
+  <li>Donner à chaque profil métier un espace de travail adapté : administration, supervision, terrain et consultation.</li>
+  <li>Fournir un cycle complet allant de l’incident terrain jusqu’à la facturation et au reporting.</li>
+</ul>
+<h3>Problème résolu</h3>
+<ul>
+  <li>Évite la dispersion des informations entre plusieurs fichiers, outils ou traitements manuels.</li>
+  <li>Sécurise l’accès aux données grâce à un contrôle d’accès par rôle à la fois côté frontend et côté backend.</li>
+  <li>Automatise des règles métier sensibles : calcul de consommation, génération de facture, suivi du solde restant et clôture des pannes après réparation.</li>
+  <li>Améliore le pilotage grâce aux dashboards, aux cartes GIS et aux exports PDF / Excel.</li>
+</ul>
+</section>
+<section class="section" id="2-technologies-utilis-es"><h2>2. Technologies utilisées</h2><p>Le projet est construit comme une application web full stack séparée en deux sous-projets : un frontend React/Vite et un backend Laravel. La base est relationnelle et la sécurité repose sur des tokens d’API.</p>
+<table>
+<thead><tr><th>Couche</th><th>Technologies</th><th>Rôle dans le projet</th></tr></thead>
+<tbody>
+<tr><td>Frontend</td><td>React 19, Vite 8, Tailwind CSS, React Router 7, Axios, Recharts, Leaflet, Lucide React</td><td>Interface web SPA, navigation, cartes, tableaux, graphiques et consommation de l’API</td></tr>
+<tr><td>Backend</td><td>Laravel 11 sur PHP 8.2</td><td>API REST, validation, contrôle d’accès, logique métier, export de documents</td></tr>
+<tr><td>Base de données</td><td>MySQL via Eloquent ORM, migrations, factories et seeders</td><td>Stockage relationnel des données métier et du système</td></tr>
+<tr><td>Authentification</td><td>Laravel Sanctum + middleware personnalisé <code>role</code> + <code>ProtectedRoute</code> côté frontend</td><td>Connexion par token, sécurité des routes et contrôle des rôles</td></tr>
+<tr><td>Documents</td><td>barryvdh/laravel-dompdf, maatwebsite/excel</td><td>Génération de PDF et export Excel</td></tr>
+<tr><td>Qualité / outils</td><td>PHPUnit, ESLint, Vite, seeders de démonstration</td><td>Tests d’API, qualité du code et environnement de développement</td></tr>
+</tbody>
+</table>
+<div class="note">La configuration locale observée dans le code pointe le frontend vers <code>http://127.0.0.1:8000/api</code> et utilise <code>MySQL</code> comme base de données principale.</div>
+</section>
+<section class="section" id="3-architecture"><h2>3. Architecture</h2><h3>Structure générale du système</h3>
+<pre><code>Utilisateur
+    |
+    v
+Frontend React (SPA)
+    |
+    |  Axios + Bearer Token
+    v
+API Laravel (/api/*)
+    |
+    +--&gt; Controllers
+    |       |
+    |       +--&gt; Services métier (facturation, notifications, tarifs)
+    |       |
+    |       +--&gt; Resources JSON
+    |
+    v
+Modèles Eloquent
+    |
+    v
+Base MySQL
+
+Exports :
+- PDF de factures et de rapports via DomPDF
+- Excel de synthèse via Laravel Excel</code></pre>
+<h3>Communication entre les composants</h3>
+<ol>
+  <li>L’utilisateur se connecte depuis le frontend React via la page <code>Login.jsx</code>.</li>
+  <li>Le frontend envoie les identifiants à <code>POST /api/login</code>.</li>
+  <li>Laravel vérifie le compte, crée un token Sanctum et renvoie le rôle ainsi que le profil utilisateur.</li>
+  <li>Le frontend stocke le token et le renvoie automatiquement dans l’en-tête <code>Authorization: Bearer ...</code> pour chaque appel ultérieur.</li>
+  <li>Les contrôleurs Laravel exécutent la logique métier, appellent si besoin les services et renvoient des ressources JSON structurées.</li>
+  <li>Les fichiers PDF et Excel sont générés côté backend puis téléchargés côté frontend sous forme de blob.</li>
+</ol>
+<div class="note">Les notifications ne passent pas par WebSocket dans cette version : la cloche du frontend effectue un polling régulier toutes les 30 secondes pour rafraîchir les données.</div>
+</section>
+<section class="section page-break-before" id="4-structure-des-dossiers"><h2>4. Structure des dossiers</h2><pre><code>RADEETA-Management-System/
+|-- frontend/
+|   |-- src/
+|   |   |-- api/
+|   |   |-- components/
+|   |   |-- context/
+|   |   |-- dashboards/
+|   |   |-- hooks/
+|   |   |-- layouts/
+|   |   |-- pages/
+|   |   |-- routes/
+|   |   `-- utils/
+|   `-- package.json
+|
+`-- backend/
+    |-- app/
+    |   |-- Enums/
+    |   |-- Http/
+    |   |   |-- Controllers/
+    |   |   |-- Middleware/
+    |   |   |-- Requests/
+    |   |   `-- Resources/
+    |   |-- Models/
+    |   |-- Notifications/
+    |   |-- Services/
+    |   `-- Support/
+    |-- database/
+    |   |-- factories/
+    |   |-- migrations/
+    |   `-- seeders/
+    |-- resources/views/
+    |-- routes/api.php
+    `-- tests/Feature/</code></pre>
+<table>
+<thead><tr><th>Fichier / dossier</th><th>Explication</th></tr></thead>
+<tbody>
+<tr><td><code>frontend/src/App.jsx</code></td><td>Routeur principal : définit les écrans par rôle et le flux global de navigation.</td></tr>
+<tr><td><code>frontend/src/context/AuthContext.jsx</code></td><td>Gestion de session, stockage local du token et redirection après connexion.</td></tr>
+<tr><td><code>frontend/src/api/axios.js</code></td><td>Client HTTP centralisé avec injection automatique du token Bearer.</td></tr>
+<tr><td><code>frontend/src/dashboards/DashboardShared.jsx</code></td><td>Chargement mutualisé des données de dashboard et widgets communs.</td></tr>
+<tr><td><code>backend/routes/api.php</code></td><td>Déclaration de toutes les routes REST et des règles d’accès par rôle.</td></tr>
+<tr><td><code>backend/app/Http/Controllers/*</code></td><td>Contrôleurs des ressources métier, de l’authentification, des rapports et des notifications.</td></tr>
+<tr><td><code>backend/app/Services/BillingService.php</code></td><td>Calcul des montants, des tranches, des taxes et création des factures.</td></tr>
+<tr><td><code>backend/app/Support/OperatorAccess.php</code></td><td>Filtrage métier pour limiter les opérateurs à leurs données assignées.</td></tr>
+<tr><td><code>backend/database/migrations/*</code></td><td>Historique de création et d’évolution du schéma relationnel.</td></tr>
+<tr><td><code>backend/database/seeders/DatabaseSeeder.php</code></td><td>Jeu de données réaliste pour démonstration et tests fonctionnels.</td></tr>
+<tr><td><code>backend/resources/views/invoices/*</code> et <code>backend/resources/views/reports/*</code></td><td>Templates Blade utilisés pour les PDF de factures et de rapports mensuels.</td></tr>
+</tbody>
+</table>
+<div class="note">Le dépôt montre aussi des traces d’évolution progressive du projet, par exemple <code>frontend/src/pages/Dashboard.jsx</code>, <code>frontend/src/pages/Notifications.jsx</code> ou <code>backend/resources/js/*</code>, qui ne sont pas au cœur du routage React actuel mais témoignent d’itérations précédentes.</div>
+</section>
+<section class="section" id="5-fonctionnalit-s-principales"><h2>5. Fonctionnalités principales</h2><p>Le code source met en évidence un périmètre métier large couvrant le terrain, l’administration et la facturation.</p>
+<table>
+<thead><tr><th>Fonctionnalité</th><th>Explication</th></tr></thead>
+<tbody>
+<tr><td>Authentification sécurisée</td><td>Connexion avec <code>identifiant</code> et <code>password</code>, génération d’un token Sanctum, déconnexion et expiration propre côté frontend.</td></tr>
+<tr><td>Gestion des utilisateurs</td><td>Création et mise à jour des comptes avec rôles <code>super_admin</code>, <code>admin</code>, <code>manager</code>, <code>operator</code>, <code>viewer</code>, <code>developer</code>.</td></tr>
+<tr><td>Gestion des clients</td><td>CRUD sur les abonnés avec police, identité, CIN, téléphone, adresse et statut d’abonnement.</td></tr>
+<tr><td>Gestion des compteurs</td><td>Association des compteurs aux clients et aux secteurs, avec calibre, marque et index de lecture.</td></tr>
+<tr><td>Gestion des secteurs</td><td>Découpage géographique par zone, tournée et coordonnées GPS pour l’affichage cartographique.</td></tr>
+<tr><td>Suivi des pannes</td><td>Déclaration d’une panne, affectation à un opérateur et suivi du statut ouvert/résolu.</td></tr>
+<tr><td>Gestion des réparations</td><td>Création d’une intervention liée à une panne ; une réparation clôt automatiquement la panne concernée.</td></tr>
+<tr><td>Relevés de compteurs</td><td>Saisie des anciens/nouveaux index et calcul automatique de la consommation.</td></tr>
+<tr><td>Facturation</td><td>Génération d’une facture à partir d’un relevé non encore facturé, avec détail des lignes, taxes, échéance et PDF.</td></tr>
+<tr><td>Paiements</td><td>Enregistrement des règlements, calcul du solde restant et mise à jour automatique du statut de facture.</td></tr>
+<tr><td>Notifications</td><td>Notifications base de données visibles dans la cloche du frontend et marquage comme lues.</td></tr>
+<tr><td>Reporting</td><td>Exports PDF et Excel pour les pannes, factures, paiements, clients et compteurs.</td></tr>
+</tbody>
+</table>
+</section>
+<section class="section" id="6-partie-frontend"><h2>6. Partie Frontend</h2><p>Le frontend est une application SPA construite avec React et Vite. Il n’implémente pas la sécurité à lui seul : il améliore l’expérience utilisateur en masquant certaines actions, mais l’autorité finale reste côté API Laravel.</p>
+<table>
+<thead><tr><th>Page / composant</th><th>Rôle</th></tr></thead>
+<tbody>
+<tr><td><code>Login.jsx</code></td><td>Écran de connexion ; appelle <code>AuthContext.login</code> puis redirige vers le dashboard du rôle connecté.</td></tr>
+<tr><td><code>Layout.jsx</code>, <code>Sidebar.jsx</code>, <code>Topbar.jsx</code></td><td>Cadre principal de l’application avec navigation latérale, titre de page, rôle courant et cloche de notifications.</td></tr>
+<tr><td><code>ProtectedRoute.jsx</code> et <code>RoleRedirect.jsx</code></td><td>Protection des routes et redirection automatique selon le rôle.</td></tr>
+<tr><td><code>rbac.js</code></td><td>Règles frontend pour afficher ou masquer les actions CRUD et choisir les chemins de dashboard.</td></tr>
+<tr><td><code>AdminDashboard.jsx</code>, <code>ManagerDashboard.jsx</code>, <code>OperatorDashboard.jsx</code>, <code>ViewerDashboard.jsx</code></td><td>Dashboards adaptés aux responsabilités de chaque type d’utilisateur.</td></tr>
+<tr><td><code>Clients.jsx</code>, <code>Compteurs.jsx</code>, <code>Secteurs.jsx</code></td><td>Pages de gestion des référentiels métier via <code>DataTable</code> et <code>EntityFormModal</code>.</td></tr>
+<tr><td><code>Pannes.jsx</code>, <code>Reparations.jsx</code>, <code>Releves.jsx</code>, <code>MyTasks.jsx</code></td><td>Écrans opérationnels pour le terrain, l’affectation, les interventions et le travail quotidien des opérateurs.</td></tr>
+<tr><td><code>Factures.jsx</code>, <code>Paiements.jsx</code>, <code>TariffSettings.jsx</code>, <code>Reports.jsx</code></td><td>Écrans de facturation, d’encaissement, de configuration tarifaire et de reporting.</td></tr>
+<tr><td><code>DataTable.jsx</code></td><td>Composant générique de tableaux avec recherche, tri, pagination et actions conditionnées par le rôle.</td></tr>
+<tr><td><code>PanneMap.jsx</code></td><td>Carte Leaflet des secteurs/pannes à partir des coordonnées GPS.</td></tr>
+<tr><td><code>InvoiceDetailModal.jsx</code></td><td>Vue détaillée d’une facture avec lignes d’eau, assainissement, taxes et actions PDF.</td></tr>
+<tr><td><code>NotificationBell.jsx</code></td><td>Chargement périodique des notifications (polling toutes les 30 secondes).</td></tr>
+</tbody>
+</table>
+<h3>Observations importantes sur le frontend</h3>
+<ul>
+  <li>Les données sont chargées principalement via le hook générique <code>useResource</code>, qui gère <code>loading</code>, <code>error</code>, <code>items</code> et <code>refresh</code>.</li>
+  <li>Les actions CRUD passent par un petit nombre de composants réutilisables : <code>DataTable</code>, <code>EntityFormModal</code>, <code>ConfirmDialog</code>, <code>Badge</code>, <code>Button</code>.</li>
+  <li>La carte <code>PanneMap</code> s’appuie sur <code>react-leaflet</code> et utilise les coordonnées GPS des secteurs pour afficher les incidents.</li>
+  <li>Les téléchargements de PDF et d’Excel se font via <code>downloadFile</code>, qui manipule les blobs reçus depuis l’API.</li>
+  <li>Le routeur principal utilisé en production est <code>frontend/src/App.jsx</code>, qui oriente vers des dashboards par rôle (<code>admin</code>, <code>manager</code>, <code>operator</code>, <code>viewer</code>).</li>
+</ul>
+</section>
+<section class="section" id="7-partie-backend"><h2>7. Partie Backend</h2><p>Le backend Laravel organise clairement les responsabilités : contrôleurs pour exposer l’API, services pour les règles métier transverses, modèles Eloquent pour la persistance, ressources pour la forme JSON et middleware pour la sécurité.</p>
+<table>
+<thead><tr><th>Composant backend</th><th>Responsabilité</th></tr></thead>
+<tbody>
+<tr><td><code>AuthController</code></td><td>Connexion, émission du token Sanctum et déconnexion.</td></tr>
+<tr><td><code>UserController</code></td><td>Lecture, création et mise à jour des utilisateurs ; récupération ciblée des opérateurs.</td></tr>
+<tr><td><code>ClientController</code>, <code>CompteurController</code>, <code>SecteurController</code></td><td>CRUD sur les référentiels principaux.</td></tr>
+<tr><td><code>PanneController</code></td><td>Création, affectation, filtrage des opérateurs, changement de statut et notifications d’affectation.</td></tr>
+<tr><td><code>ReparationController</code> + <code>ReparationRequest</code></td><td>Validation métier, clôture automatique de panne, contrôle de date et unicité de la réparation active.</td></tr>
+<tr><td><code>ReleveController</code></td><td>Saisie des relevés, contrôle des index, calcul de consommation et protection des relevés déjà facturés.</td></tr>
+<tr><td><code>FactureController</code></td><td>Liste, création, aperçu PDF et téléchargement des factures.</td></tr>
+<tr><td><code>PaiementController</code></td><td>Ajout des paiements, contrôle du dépassement du solde et rafraîchissement du statut de facture.</td></tr>
+<tr><td><code>DashboardController</code></td><td>Indicateurs de pilotage, métriques par secteur et top opérateurs.</td></tr>
+<tr><td><code>NotificationController</code></td><td>Lecture et marquage des notifications, avec visibilité selon le rôle.</td></tr>
+<tr><td><code>ReportController</code></td><td>Exports mensuels PDF/Excel pour le management.</td></tr>
+<tr><td><code>TariffSettingController</code></td><td>Lecture et mise à jour de la configuration tarifaire JSON.</td></tr>
+<tr><td><code>BillingService</code></td><td>Calcule les tranches d’eau/assainissement, la TVA, les frais fixes et la structure détaillée d’une facture.</td></tr>
+<tr><td><code>NotificationService</code></td><td>Diffuse les événements métier importants aux bons profils.</td></tr>
+<tr><td><code>OperatorAccess</code> + <code>EnsureUserHasRole</code></td><td>Double sécurité métier : filtrage des données opérateur et contrôle d’accès aux endpoints.</td></tr>
+</tbody>
+</table>
+<h3>Logique métier notable</h3>
+<ul>
+  <li>Une réparation valide ferme automatiquement la panne correspondante ; si la réparation disparaît, la panne peut être réouverte.</li>
+  <li>Un relevé déjà facturé ne peut plus être modifié.</li>
+  <li>Le montant d’un paiement ne peut pas dépasser le solde restant de la facture.</li>
+  <li>Les opérateurs ne voient pas tout le système : <code>OperatorAccess</code> filtre leurs données à partir des pannes et secteurs qui leur sont assignés.</li>
+  <li>La configuration tarifaire est stockée en JSON et fusionnée avec des valeurs par défaut pour éviter les paramètres manquants.</li>
+</ul>
+</section>
+<section class="section page-break-before" id="8-api-endpoints"><h2>8. API (endpoints)</h2><p>L’API suit une logique REST enrichie de quelques routes métier (authentification, prévisualisation PDF, rapports et paramètres tarifaires). Les routes sont regroupées dans <code>backend/routes/api.php</code> et protégées par <code>auth:sanctum</code> puis par le middleware <code>role</code>.</p>
+<table>
+<thead><tr><th>Endpoint principal</th><th>Catégorie</th><th>Utilité</th></tr></thead>
+<tbody>
+<tr><td><code>POST /api/login</code></td><td>Authentification</td><td>Valide les identifiants, retourne le token, le rôle et le profil utilisateur.</td></tr>
+<tr><td><code>POST /api/logout</code></td><td>Authentification</td><td>Supprime le token actif.</td></tr>
+<tr><td><code>GET /api/dashboard/summary</code> et <code>GET /api/dashboard/stats</code></td><td>Pilotage</td><td>Retourne les statistiques globales du système.</td></tr>
+<tr><td><code>GET /api/notifications</code></td><td>Notifications</td><td>Liste les notifications visibles par l’utilisateur connecté.</td></tr>
+<tr><td><code>POST /api/notifications/read</code> et <code>PUT /api/notifications/mark-as-read</code></td><td>Notifications</td><td>Marque une ou plusieurs notifications comme lues.</td></tr>
+<tr><td><code>GET /api/clients</code>, <code>GET /api/clients/{id}</code></td><td>Clients</td><td>Consultation des clients.</td></tr>
+<tr><td><code>POST /api/clients</code>, <code>PUT /api/clients/{id}</code>, <code>DELETE /api/clients/{id}</code></td><td>Clients</td><td>Création, modification et suppression logique des clients.</td></tr>
+<tr><td><code>GET /api/compteurs</code>, <code>GET /api/compteurs/{id}</code></td><td>Compteurs</td><td>Consultation des compteurs et de leurs relations.</td></tr>
+<tr><td><code>POST /api/compteurs</code>, <code>PUT /api/compteurs/{id}</code>, <code>DELETE /api/compteurs/{id}</code></td><td>Compteurs</td><td>Gestion des compteurs.</td></tr>
+<tr><td><code>GET /api/secteurs</code>, <code>GET /api/secteurs/{id}</code></td><td>Secteurs</td><td>Consultation des secteurs et des coordonnées GPS.</td></tr>
+<tr><td><code>POST /api/secteurs</code>, <code>PUT /api/secteurs/{id}</code>, <code>DELETE /api/secteurs/{id}</code></td><td>Secteurs</td><td>Gestion des secteurs et tournées.</td></tr>
+<tr><td><code>GET /api/pannes</code>, <code>GET /api/pannes/{id}</code></td><td>Pannes</td><td>Lecture des pannes ; les opérateurs ne voient que leurs pannes assignées.</td></tr>
+<tr><td><code>POST /api/pannes</code>, <code>PUT /api/pannes/{id}</code>, <code>DELETE /api/pannes/{id}</code></td><td>Pannes</td><td>Création, affectation, changement de statut et suppression.</td></tr>
+<tr><td><code>GET /api/reparations</code>, <code>GET /api/reparations/{id}</code></td><td>Réparations</td><td>Historique des interventions.</td></tr>
+<tr><td><code>POST /api/reparations</code>, <code>PUT /api/reparations/{id}</code>, <code>DELETE /api/reparations/{id}</code></td><td>Réparations</td><td>Gestion des interventions ; une réparation résout la panne liée.</td></tr>
+<tr><td><code>GET /api/releves</code>, <code>GET /api/releves/{id}</code></td><td>Relevés</td><td>Consultation des relevés et filtrage des relevés non facturés.</td></tr>
+<tr><td><code>POST /api/releves</code>, <code>PUT /api/releves/{id}</code></td><td>Relevés</td><td>Saisie et mise à jour des lectures de compteurs.</td></tr>
+<tr><td><code>GET /api/factures</code>, <code>GET /api/factures/{id}</code></td><td>Facturation</td><td>Liste et détail des factures.</td></tr>
+<tr><td><code>POST /api/factures</code></td><td>Facturation</td><td>Génère une facture à partir d’un relevé non facturé.</td></tr>
+<tr><td><code>GET /api/factures/{facture}/preview</code></td><td>Facturation</td><td>Affiche le PDF de facture dans le navigateur.</td></tr>
+<tr><td><code>GET /api/factures/{facture}/pdf</code></td><td>Facturation</td><td>Télécharge le PDF de facture.</td></tr>
+<tr><td><code>POST /api/factures/{facture}/paiements</code></td><td>Paiements</td><td>Ajoute un paiement sur une facture.</td></tr>
+<tr><td><code>GET /api/paiements</code></td><td>Paiements</td><td>Liste les règlements enregistrés.</td></tr>
+<tr><td><code>GET /api/tariff-settings</code>, <code>PUT /api/tariff-settings</code></td><td>Configuration</td><td>Lit et met à jour la grille tarifaire JSON.</td></tr>
+<tr><td><code>GET /api/users</code>, <code>POST /api/users</code>, <code>PUT /api/users/{id}</code></td><td>Utilisateurs</td><td>Consultation et gestion des comptes.</td></tr>
+<tr><td><code>GET /api/users/operators</code> et <code>GET /api/plombiers</code></td><td>Utilisateurs</td><td>Retourne la liste des opérateurs / plombiers.</td></tr>
+<tr><td><code>GET /api/reports/pannes/pdf</code></td><td>Rapports</td><td>Export PDF mensuel des pannes.</td></tr>
+<tr><td><code>GET /api/reports/invoices/pdf</code></td><td>Rapports</td><td>Export PDF mensuel des factures.</td></tr>
+<tr><td><code>GET /api/reports/clients/excel</code></td><td>Rapports</td><td>Export Excel clients + compteurs.</td></tr>
+<tr><td><code>GET /api/reports/payments/excel</code></td><td>Rapports</td><td>Export Excel des paiements.</td></tr>
+</tbody>
+</table>
+<div class="note">Le code distingue bien les droits de lecture, de création, de mise à jour et de suppression selon les rôles. Par exemple, <code>viewer</code> reste en lecture seule, tandis qu’un <code>operator</code> ne peut pas accéder aux factures ni aux paiements.</div>
+</section>
+<section class="section" id="9-base-de-donn-es"><h2>9. Base de données</h2><p>La base relationnelle est structurée pour couvrir le cycle de vie complet du métier : référentiel, incidents, interventions, relève, facturation, encaissement et notifications.</p>
+<table>
+<thead><tr><th>Table / modèle</th><th>Rôle</th><th>Relations clés</th></tr></thead>
+<tbody>
+<tr><td><code>users</code></td><td>Comptes applicatifs avec rôle et identifiant de connexion.</td><td>1 utilisateur peut être opérateur assigné à plusieurs pannes et réparations.</td></tr>
+<tr><td><code>personal_access_tokens</code></td><td>Tokens Sanctum pour l’API.</td><td>Liés aux utilisateurs via relation polymorphe.</td></tr>
+<tr><td><code>secteurs</code></td><td>Zones géographiques, emplacement, tournée, latitude, longitude.</td><td>1 secteur possède plusieurs compteurs.</td></tr>
+<tr><td><code>clients</code></td><td>Abonnés et leurs informations administratives.</td><td>1 client possède plusieurs compteurs et plusieurs factures.</td></tr>
+<tr><td><code>compteurs</code></td><td>Compteurs physiques rattachés à un client et à un secteur.</td><td>1 compteur a plusieurs pannes, relevés et factures.</td></tr>
+<tr><td><code>pannes</code></td><td>Incidents détectés sur les compteurs.</td><td>1 panne appartient à 1 compteur et peut être assignée à 1 opérateur.</td></tr>
+<tr><td><code>reparations</code></td><td>Interventions de réparation.</td><td>1 réparation appartient à 1 panne et à 1 opérateur/plombier.</td></tr>
+<tr><td><code>releves</code></td><td>Lectures des index de compteurs.</td><td>1 relevé appartient à 1 compteur et peut mener à 1 facture.</td></tr>
+<tr><td><code>factures</code></td><td>Factures détaillées (montants, lignes, snapshot de calcul, échéance, statut).</td><td>1 facture appartient à 1 client, 1 compteur, 1 relevé et possède plusieurs paiements.</td></tr>
+<tr><td><code>paiements</code></td><td>Règlements des factures.</td><td>1 paiement appartient à 1 facture et à un créateur utilisateur.</td></tr>
+<tr><td><code>tariff_settings</code></td><td>Configuration JSON des tranches, taxes et coefficients.</td><td>Utilisée par <code>BillingService</code> au moment de la génération d’une facture.</td></tr>
+<tr><td><code>notifications</code></td><td>Notifications Laravel en base de données (uuid, data JSON, read_at).</td><td>Visibilité globale pour admins, personnelle pour les autres rôles.</td></tr>
+</tbody>
+</table>
+<h3>Relations principales</h3>
+<pre><code>User 1----n Panne (assigned_to)
+User 1----n Reparation (id_plombier)
+User 1----n Releve (created_by)
+
+Client 1----n Compteur
+Client 1----n Facture
+
+Secteur 1----n Compteur
+Secteur 1----n Panne (via Compteur)
+
+Compteur 1----n Panne
+Compteur 1----n Releve
+Compteur 1----n Facture
+
+Panne 1----n Reparation
+Releve 1----1 Facture
+Facture 1----n Paiement</code></pre>
+<h3>Contraintes utiles à retenir</h3>
+<ul>
+  <li>Suppression logique (<code>soft deletes</code>) sur les clients, compteurs, secteurs, pannes et réparations.</li>
+  <li>Unicité de <code>police</code>, <code>cadran</code>, <code>reference</code> de facture et <code>identifiant</code> utilisateur.</li>
+  <li>Contrôle sur les index de relevé : le nouvel index doit être supérieur ou égal à l’ancien.</li>
+  <li>Une panne ne peut pas avoir plusieurs réparations actives concurrentes.</li>
+  <li>Les statuts de facture (<code>impayee</code>, <code>partielle</code>, <code>payee</code>) sont recalculés après chaque paiement.</li>
+</ul>
+</section>
+<section class="section" id="10-authentification-et-r-les"><h2>10. Authentification et rôles</h2><h3>Connexion</h3>
+<ul>
+  <li>L’utilisateur se connecte avec <code>identifiant</code> et <code>password</code>.</li>
+  <li>Le backend crée un token Sanctum et le renvoie au frontend.</li>
+  <li>Le token est stocké dans le navigateur puis ajouté automatiquement à chaque requête API.</li>
+  <li>En cas de <code>401</code>, le frontend vide la session locale et force la reconnexion.</li>
+</ul>
+<h3>Rôles observés dans le code</h3>
+<table>
+<thead><tr><th>Rôle</th><th>Accès principal</th></tr></thead>
+<tbody>
+<tr><td><code>super_admin</code></td><td>Accès complet au backend ; le middleware lui laisse passer toutes les routes.</td></tr>
+<tr><td><code>admin</code></td><td>Accès étendu : utilisateurs, clients, secteurs, compteurs, pannes, réparations, relevés, factures, paiements, tarifs et rapports.</td></tr>
+<tr><td><code>manager</code></td><td>Pilotage opérationnel et commercial : dashboards, pannes, réparations, relevés, factures, paiements, tarifs et rapports.</td></tr>
+<tr><td><code>operator</code></td><td>Accès limité au travail terrain assigné : pannes assignées, réparations autorisées, relevés dans le périmètre lié aux tâches.</td></tr>
+<tr><td><code>viewer</code></td><td>Lecture seule sur les données métier, les factures, les paiements et les rapports.</td></tr>
+<tr><td><code>developer</code></td><td>Rôle technique présent dans le code mais explicitement bloqué en production.</td></tr>
+</tbody>
+</table>
+<h3>Remarques importantes</h3>
+<ul>
+  <li>Le <code>super_admin</code> est reconnu côté backend ; côté frontend, il est redirigé vers le dashboard admin.</li>
+  <li>Le rôle <code>developer</code> existe pour des besoins techniques mais le code le bloque en production, aussi bien dans l’authentification que dans le middleware.</li>
+  <li>Le contrôle d’accès est doublé : le frontend masque les écrans/actions non autorisés, et le backend refuse réellement l’accès aux routes interdites.</li>
+</ul>
+</section>
+<section class="section" id="11-workflow-de-l-application"><h2>11. Workflow de l’application</h2><ol>
+  <li>Un utilisateur ouvre la page de connexion et saisit son <code>identifiant</code> ainsi que son mot de passe.</li>
+  <li>Le backend valide le compte et renvoie un token Sanctum, le rôle et le profil.</li>
+  <li>Le frontend redirige automatiquement l’utilisateur vers le dashboard correspondant à son rôle.</li>
+  <li>Les administrateurs et managers préparent le référentiel : secteurs, utilisateurs, clients, compteurs et paramètres tarifaires.</li>
+  <li>Une panne est déclarée puis éventuellement affectée à un opérateur.</li>
+  <li>L’opérateur consulte ses tâches, traite la panne et peut enregistrer une réparation.</li>
+  <li>Lors des tournées, un relevé est saisi ; la consommation est calculée automatiquement et l’index du compteur est mis à jour.</li>
+  <li>Un administrateur ou manager génère ensuite une facture à partir d’un relevé non encore facturé.</li>
+  <li>Les paiements sont enregistrés au fil des encaissements ; le statut de la facture passe de <code>impayee</code> à <code>partielle</code> ou <code>payee</code>.</li>
+  <li>Les responsables et utilisateurs autorisés consultent enfin les dashboards, la carte des secteurs, les notifications et les rapports exportables.</li>
+</ol>
+</section>
+<section class="section page-break-before" id="12-exemples-de-code-importants"><h2>12. Exemples de code importants</h2><h3>Exemple 1 : authentification et création du token</h3>
+<pre><code>$validated = $request-&gt;validate([
+    &#039;identifiant&#039; =&gt; [&#039;required&#039;, &#039;string&#039;],
+    &#039;password&#039; =&gt; [&#039;required&#039;, &#039;string&#039;],
+    &#039;device_name&#039; =&gt; [&#039;nullable&#039;, &#039;string&#039;, &#039;max:255&#039;],
+]);
+
+$user = User::where(&#039;identifiant&#039;, $validated[&#039;identifiant&#039;])-&gt;first();
+
+if (! $user || ! Hash::check($validated[&#039;password&#039;], $user-&gt;password)) {
+    throw ValidationException::withMessages([
+        &#039;identifiant&#039; =&gt; [&#039;The provided credentials are incorrect.&#039;],
+    ]);
+}
+
+$token = $user-&gt;createToken($validated[&#039;device_name&#039;] ?? &#039;api-token&#039;)-&gt;plainTextToken;</code></pre>
+<p class="code-caption">Cet extrait d’<code>AuthController</code> montre la séquence principale : validation des champs, recherche de l’utilisateur, vérification du mot de passe, puis création du token d’API.</p>
+<h3>Exemple 2 : calcul automatique de la consommation</h3>
+<pre><code>protected static function booted(): void
+{
+    static::saving(function (Releve $releve): void {
+        $releve-&gt;consommation = max(
+            0,
+            (float) $releve-&gt;nouvel_index - (float) $releve-&gt;ancien_index
+        );
+    });
+}</code></pre>
+<p class="code-caption">Le modèle <code>Releve</code> calcule automatiquement la consommation au moment de l’enregistrement. Cela évite de dépendre du frontend pour une règle métier aussi importante.</p>
+<h3>Exemple 3 : filtrage métier pour les opérateurs</h3>
+<pre><code>public static function scopeFactures(Builder $query, User $user): Builder
+{
+    return $query-&gt;where(function (Builder $query) use ($user): void {
+        $query-&gt;whereHas(&#039;releve&#039;, fn (Builder $releve) =&gt; $releve-&gt;where(&#039;created_by&#039;, $user-&gt;id))
+            -&gt;orWhereHas(&#039;compteur.pannes&#039;, fn (Builder $panne) =&gt; $panne-&gt;where(&#039;assigned_to&#039;, $user-&gt;id));
+    });
+}</code></pre>
+<p class="code-caption">Dans <code>OperatorAccess</code>, les opérateurs ne voient pas toutes les factures : ils sont limités aux éléments liés à leurs propres relevés ou à leurs pannes assignées.</p>
+<h3>Exemple 4 : structure de calcul d’une facture</h3>
+<pre><code>$waterLines = $this-&gt;tariffs-&gt;splitConsumption($consumption, data_get($config, &#039;water.tranches&#039;, []), &#039;water&#039;, $waterTva);
+$sanitationLines = $this-&gt;tariffs-&gt;splitConsumption($consumption, data_get($config, &#039;sanitation.tranches&#039;, []), &#039;sanitation&#039;, $sanitationTva);
+
+$lineItems = array_values(array_filter(
+    [...$waterLines, ...$sanitationLines, ...$fixedLines, ...$taxLines],
+    fn (array $line): bool =&gt; (float) $line[&#039;montant_ht&#039;] &gt; 0
+));
+
+return [
+    &#039;montant_ht&#039; =&gt; $montantHt,
+    &#039;taxes&#039; =&gt; $taxes,
+    &#039;tva&#039; =&gt; $tva,
+    &#039;total_ttc&#039; =&gt; $total,
+    &#039;line_items&#039; =&gt; $lineItems,
+    &#039;detail_snapshot&#039; =&gt; [
+        &#039;agence&#039; =&gt; $config[&#039;agence&#039;] ?? &#039;SRM Taza/Region&#039;,
+        &#039;consommation_m3&#039; =&gt; $consumption,
+    ],
+];</code></pre>
+<p class="code-caption">Le service <code>BillingService</code> assemble des lignes de facturation détaillées par section (<code>water</code>, <code>sanitation</code>, <code>taxes</code>) et produit un <code>detail_snapshot</code> enregistré dans la facture pour garder une trace fidèle du calcul.</p>
+</section>
+<section class="section" id="13-conclusion"><h2>13. Conclusion</h2><p>D’après le code source, <code>RADEETA-Management-System</code> est une application de gestion métier complète, pensée pour relier les opérations terrain, la gestion des abonnés et la facturation dans un seul système. L’architecture séparée React / Laravel est cohérente, la sécurité par rôles est appliquée à plusieurs niveaux et la logique métier essentielle est bien centralisée dans le backend.</p>
+<p>Le projet se distingue aussi par des fonctionnalités de présentation utiles dans un contexte professionnel : cartes GIS, dashboards par rôle, exports PDF/Excel, notifications, seeders de démonstration et premiers tests d’API. En résumé, il s’agit d’une base solide pour un outil de pilotage opérationnel et commercial d’un service de distribution d’eau.</p>
+</section>
+
+</body>
+</html>
