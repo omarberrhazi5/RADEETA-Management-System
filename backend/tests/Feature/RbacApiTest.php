@@ -8,9 +8,12 @@ use App\Models\Client;
 use App\Models\Compteur;
 use App\Models\Intervention;
 use App\Models\Panne;
+use App\Models\Reparation;
 use App\Models\Releve;
 use App\Models\User;
+use App\Notifications\UtilityNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -104,6 +107,42 @@ class RbacApiTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_technician_can_update_only_assigned_repairs(): void
+    {
+        $technician = User::factory()->create(['role' => UserRole::Technician]);
+        $otherTechnician = User::factory()->create(['role' => UserRole::Technician]);
+        $assignedPanne = Panne::factory()->create(['assigned_to' => $technician->id]);
+        $otherPanne = Panne::factory()->create(['assigned_to' => $otherTechnician->id]);
+        $assignedRepair = Reparation::factory()->create([
+            'id_panne' => $assignedPanne->id,
+            'id_plombier' => $technician->id,
+            'date_reparation' => $assignedPanne->date_panne->toDateString(),
+            'description' => 'Initial repair progress.',
+        ]);
+        $otherRepair = Reparation::factory()->create([
+            'id_panne' => $otherPanne->id,
+            'id_plombier' => $otherTechnician->id,
+        ]);
+
+        Sanctum::actingAs($technician);
+
+        $this->getJson('/api/reparations')->assertOk()->assertJsonCount(1, 'data');
+        $this->putJson("/api/reparations/{$assignedRepair->id}", [
+            'description' => 'Updated field repair progress.',
+            'id_panne' => $otherPanne->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('reparations', [
+            'id' => $assignedRepair->id,
+            'id_panne' => $assignedPanne->id,
+            'description' => 'Updated field repair progress.',
+        ]);
+
+        $this->putJson("/api/reparations/{$otherRepair->id}", [
+            'description' => 'Unauthorized update.',
+        ])->assertForbidden();
+    }
+
     public function test_viewer_has_read_only_access(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => UserRole::Viewer]));
@@ -118,6 +157,35 @@ class RbacApiTest extends TestCase
             'police' => 'POL-910001',
             'nom' => 'Viewer',
         ])->assertForbidden();
+    }
+
+    public function test_meter_api_returns_operational_fields_with_fallbacks(): void
+    {
+        $responsable = User::factory()->create(['role' => UserRole::Responsable]);
+        $completeMeter = Compteur::factory()->create([
+            'num_contrat' => 'CTR-900001',
+            'num_tournee' => 'TR-042',
+            'usage' => 'commercial',
+        ]);
+        $legacyMeter = Compteur::factory()->create([
+            'num_contrat' => null,
+            'num_tournee' => null,
+            'usage' => null,
+        ]);
+
+        Sanctum::actingAs($responsable);
+
+        $this->getJson("/api/compteurs/{$completeMeter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.num_contrat', 'CTR-900001')
+            ->assertJsonPath('data.num_tournee', 'TR-042')
+            ->assertJsonPath('data.usage', 'commercial');
+
+        $this->getJson("/api/compteurs/{$legacyMeter->id}")
+            ->assertOk()
+            ->assertJsonPath('data.num_contrat', 'N/A')
+            ->assertJsonPath('data.num_tournee', 'N/A')
+            ->assertJsonPath('data.usage', 'N/A');
     }
 
     public function test_directeur_can_access_dashboard_statistics(): void
@@ -137,22 +205,48 @@ class RbacApiTest extends TestCase
             ]);
     }
 
-    public function test_directeur_and_responsable_can_fetch_notifications(): void
+    public function test_authenticated_roles_can_fetch_notifications(): void
     {
-        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Directeur]));
-        $this->getJson('/api/notifications')->assertOk();
+        foreach ([UserRole::Directeur, UserRole::Responsable, UserRole::Manager, UserRole::Technician, UserRole::Viewer] as $role) {
+            Sanctum::actingAs(User::factory()->create(['role' => $role]));
+            $this->getJson('/api/notifications')->assertOk();
+        }
+    }
 
-        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Responsable]));
-        $this->getJson('/api/notifications')->assertOk();
+    public function test_notifications_are_filtered_by_role_and_assignment(): void
+    {
+        $manager = User::factory()->create(['role' => UserRole::Manager]);
+        $technician = User::factory()->create(['role' => UserRole::Technician]);
+        $viewer = User::factory()->create(['role' => UserRole::Viewer]);
 
-        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Manager]));
-        $this->getJson('/api/notifications')->assertForbidden();
+        $manager->notify(new UtilityNotification('RBAC settings changed', 'Security role matrix updated.', 'rbac_changed'));
+        $manager->notify(new UtilityNotification('Delayed intervention', '3 delayed interventions detected.', 'delayed_intervention'));
 
-        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Technician]));
-        $this->getJson('/api/notifications')->assertForbidden();
+        $technician->notify(new UtilityNotification('Assigned intervention', 'You have been assigned to intervention #INT-55.', 'intervention_assigned', ['technician_id' => $technician->id]));
+        $technician->notify(new UtilityNotification('Other assignment', 'Another technician was assigned.', 'intervention_assigned', ['technician_id' => $technician->id + 999]));
+        $technician->notify(new UtilityNotification('System alert', 'Sensitive system alert.', 'system_alert'));
 
-        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Viewer]));
-        $this->getJson('/api/notifications')->assertForbidden();
+        $viewer->notify(new UtilityNotification('Monthly report available', 'Monthly report available.', 'monthly_report_available'));
+        $viewer->notify(new UtilityNotification('Technician assigned', 'Technician assigned to intervention #INT-203.', 'intervention_assigned'));
+
+        Sanctum::actingAs($manager);
+        $this->getJson('/api/notifications')
+            ->assertOk()
+            ->assertJsonMissing(['type' => 'rbac_changed'])
+            ->assertJsonFragment(['type' => 'delayed_intervention']);
+
+        Sanctum::actingAs($technician);
+        $this->getJson('/api/notifications')
+            ->assertOk()
+            ->assertJsonMissing(['message' => 'Sensitive system alert.'])
+            ->assertJsonMissing(['message' => 'Another technician was assigned.'])
+            ->assertJsonFragment(['message' => 'You have been assigned to intervention #INT-55.']);
+
+        Sanctum::actingAs($viewer);
+        $this->getJson('/api/notifications')
+            ->assertOk()
+            ->assertJsonMissing(['type' => 'intervention_assigned'])
+            ->assertJsonFragment(['type' => 'monthly_report_available']);
     }
 
     public function test_only_directeur_can_access_administration_endpoints(): void
@@ -180,6 +274,38 @@ class RbacApiTest extends TestCase
         $this->getJson('/api/logs')->assertOk();
         $this->getJson('/api/settings')->assertOk();
         $this->putJson('/api/settings', $this->settingsPayload())->assertOk();
+    }
+
+    public function test_directeur_user_management_supports_edit_reset_and_delete_with_self_protection(): void
+    {
+        $directeur = User::factory()->create(['role' => UserRole::Directeur]);
+        $managed = User::factory()->create(['role' => UserRole::Viewer, 'nom' => 'Lecteur', 'email' => 'lecteur@srm-fm.test']);
+
+        Sanctum::actingAs($directeur);
+
+        $this->putJson("/api/users/{$managed->id}", [
+            'nom' => 'Manager',
+            'prenom' => 'Operations',
+            'email' => 'manager.ops@srm-fm.test',
+            'role' => UserRole::Manager->value,
+        ])->assertOk()
+            ->assertJsonPath('data.role', UserRole::Manager->value);
+
+        $this->patchJson("/api/users/{$managed->id}/password", [
+            'password' => 'NewSecure123',
+            'password_confirmation' => 'NewSecure123',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('NewSecure123', $managed->refresh()->password));
+
+        $this->putJson("/api/users/{$directeur->id}", [
+            'role' => UserRole::Viewer->value,
+        ])->assertUnprocessable();
+
+        $this->deleteJson("/api/users/{$directeur->id}")->assertUnprocessable();
+
+        $this->deleteJson("/api/users/{$managed->id}")->assertOk();
+        $this->assertDatabaseMissing('users', ['id' => $managed->id]);
     }
 
     public function test_directeur_and_responsable_can_create_repairs(): void

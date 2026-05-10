@@ -16,7 +16,7 @@ export default function Notifications() {
   const { error, items, loading, meta, refresh } = useResource(endpoints.notifications, { limit: 50 });
 
   async function markAllRead() {
-    await endpoints.markNotificationsRead();
+    await endpoints.markAllNotificationsRead();
     refresh();
   }
 

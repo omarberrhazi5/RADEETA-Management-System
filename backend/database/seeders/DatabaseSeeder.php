@@ -118,6 +118,9 @@ class DatabaseSeeder extends Seeder
             $isBusiness = ($index + 1) % 7 === 0 || $secteur->nom_secteur === 'Zone Industrielle';
 
             return Compteur::updateOrCreate(['cadran' => 'SRM'.now()->format('y').'TZ'.str_pad((string) ($index + 1), 6, '0', STR_PAD_LEFT)], [
+                'num_contrat' => $client->police,
+                'num_tournee' => $secteur->num_torne,
+                'usage' => $client->type_abonnement,
                 'calibre' => $isBusiness ? '20' : '15',
                 'marque' => ['Itron', 'Sagemcom', 'Landis+Gyr', 'Elster'][($index) % 4],
                 'service_type' => $client->service_type,

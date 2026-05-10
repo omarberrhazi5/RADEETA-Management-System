@@ -19,7 +19,7 @@ class ReparationRequest extends FormRequest
         }
 
         $routeReparation = $this->route('reparation');
-        $panneId = $this->filled('id_panne') ? $this->integer('id_panne') : $routeReparation?->id_panne;
+        $panneId = $routeReparation?->id_panne ?? ($this->filled('id_panne') ? $this->integer('id_panne') : null);
 
         return $panneId
             ? Panne::whereKey($panneId)->where('assigned_to', $this->user()->id)->exists()
@@ -28,6 +28,22 @@ class ReparationRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if ($this->filled('anomaly_id') && ! $this->filled('id_panne')) {
+            $this->merge(['id_panne' => $this->input('anomaly_id')]);
+        }
+
+        if ($this->filled('panne_id') && ! $this->filled('id_panne')) {
+            $this->merge(['id_panne' => $this->input('panne_id')]);
+        }
+
+        if ($this->filled('technician_id') && ! $this->filled('id_plombier')) {
+            $this->merge(['id_plombier' => $this->input('technician_id')]);
+        }
+
+        if ($this->filled('repair_date') && ! $this->filled('date_reparation')) {
+            $this->merge(['date_reparation' => $this->input('repair_date')]);
+        }
+
         if ($this->isOperator()) {
             $this->merge(['id_plombier' => $this->user()->id]);
         }
@@ -38,13 +54,12 @@ class ReparationRequest extends FormRequest
         $required = $this->isMethod('post') ? 'required' : 'sometimes';
 
         return [
-            'id_panne' => [$required, 'required', Rule::exists('pannes', 'id')],
+            'id_panne' => [$required, Rule::exists('pannes', 'id')],
             'id_plombier' => [
                 $required,
-                'required',
                 Rule::exists('users', 'id')->where('role', UserRole::Technician->value),
             ],
-            'date_reparation' => [$required, 'required', 'date'],
+            'date_reparation' => [$required, 'date'],
             'description' => ['nullable', 'string', 'max:5000'],
         ];
     }
@@ -53,9 +68,11 @@ class ReparationRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $routeReparation = $this->route('reparation');
-            $panneId = $this->filled('id_panne')
+            $panneId = $this->isOperator() && $routeReparation
+                ? $routeReparation->id_panne
+                : ($this->filled('id_panne')
                 ? $this->integer('id_panne')
-                : $routeReparation?->id_panne;
+                : $routeReparation?->id_panne);
 
             if (! $panneId) {
                 return;
@@ -87,6 +104,15 @@ class ReparationRequest extends FormRequest
                 $validator->errors()->add('id_panne', 'This fault already has an active repair.');
             }
         });
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'id_panne' => 'anomaly id',
+            'id_plombier' => 'technician id',
+            'date_reparation' => 'repair date',
+        ];
     }
 
     private function isOperator(): bool

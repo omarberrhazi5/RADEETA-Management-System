@@ -16,6 +16,9 @@ export const endpoints = {
   reparations: (params) => api.get('/reparations', { params }),
   interventions: (params) => api.get('/interventions', { params }),
   users: (params) => api.get('/users', { params }),
+  updateUser: (id, payload) => api.put(`/users/${id}`, payload),
+  deleteUser: (id) => api.delete(`/users/${id}`),
+  resetUserPassword: (id, payload) => api.patch(`/users/${id}/password`, payload),
   settings: () => api.get('/settings'),
   logs: (params) => api.get('/logs', { params }),
   technicians: (params) => api.get('/users/technicians', { params }),
@@ -23,4 +26,6 @@ export const endpoints = {
   releves: (params) => api.get('/releves', { params }),
   notifications: (params) => api.get('/notifications', { params }),
   markNotificationsRead: (payload = {}) => api.post('/notifications/read', payload),
+  markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllNotificationsRead: () => api.patch('/notifications/read-all'),
 };

@@ -370,6 +370,20 @@
     },
     "usersTitle": "Users",
     "created": "User created successfully.",
+    "updated": "User updated successfully.",
+    "deleted": "User deleted successfully.",
+    "editUser": "Edit user",
+    "resetPassword": "Reset password",
+    "passwordReset": "Password reset successfully.",
+    "passwordResetFailed": "Unable to reset the password.",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Passwords do not match.",
+    "confirmDelete": "Confirm delete",
+    "deleteFailed": "Unable to delete this user.",
+    "deleteUserPrompt": "Delete {{name}}?",
+    "deleteUserWarning": "This action cannot be undone.",
+    "selfRoleLocked": "Your own role is locked to prevent system lockout.",
+    "updateFailed": "Unable to update the user.",
     "createFailed": "Unable to create the user.",
     "creationImpossible": "Creation failed.",
     "generalSettings": "General settings",
@@ -436,16 +450,31 @@
     "": ""
   },
   "notificationTypes": {
+    "anomaly_created": {
+      "label": "New anomaly",
+      "title": "New anomaly created",
+      "message": "Anomaly #{{id}} was reported for meter {{meter}}."
+    },
     "panne_assigned": {
       "label": "Assigned anomaly",
       "title": "Anomaly assigned",
       "message": "Anomaly #{{id}} was assigned.",
       "messageWithSector": "Anomaly #{{id}} was assigned in {{sector}}."
     },
+    "intervention_assigned": {
+      "label": "Intervention assigned",
+      "title": "Intervention assigned",
+      "message": "Intervention #{{id}} was assigned."
+    },
     "repair_completed": {
       "label": "Repair completed",
       "title": "Repair completed",
       "message": "Repair #{{id}} was completed for anomaly #{{panneId}}."
+    },
+    "status_changed": {
+      "label": "Status changed",
+      "title": "Status changed",
+      "message": "Intervention #{{id}} changed from {{from}} to {{to}}."
     },
     "user_created": {
       "label": "User created",

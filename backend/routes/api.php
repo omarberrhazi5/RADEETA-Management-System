@@ -24,28 +24,30 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::delete('auth/tokens', [AuthController::class, 'clearTokens'])->middleware('role:'.UserRole::Directeur->value);
 
-    $operationalWriteRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
-    $supervisionRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
-    $reportRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
-    $repairReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
-    $interventionReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
-    $repairWriteRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
-    $fieldUpdateRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
-    $businessReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Viewer->value, UserRole::Developer->value]);
-    $panneReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
-    $notificationRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
+    $operationalWriteRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Developer->value]);
+    $supervisionRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
+    $reportRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
+    $repairReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $interventionReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
+    $repairUpdateRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $fieldUpdateRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $businessReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Viewer->value, UserRole::Developer->value]);
+    $panneReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
     Route::get('dashboard/summary', [DashboardController::class, 'summary'])->middleware("role:{$supervisionRoles}");
     Route::get('dashboard/stats', [DashboardController::class, 'summary'])->middleware("role:{$supervisionRoles}");
     Route::middleware('directeur')->group(function (): void {
         Route::get('settings', [SettingsController::class, 'show']);
         Route::put('settings', [SettingsController::class, 'update']);
         Route::get('logs', [ActivityLogController::class, 'index']);
-        Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
+        Route::patch('users/{user}/password', [UserController::class, 'resetPassword']);
+        Route::apiResource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
-    Route::get('notifications', [NotificationController::class, 'index'])->middleware("role:{$notificationRoles}");
-    Route::post('notifications/read', [NotificationController::class, 'markAsRead'])->middleware("role:{$notificationRoles}");
-    Route::put('notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->middleware("role:{$notificationRoles}");
+    Route::get('notifications', [NotificationController::class, 'index']);
+    Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('notifications/{id}/read', [NotificationController::class, 'markOneAsRead']);
+    Route::post('notifications/read', [NotificationController::class, 'markAsRead']);
+    Route::put('notifications/mark-as-read', [NotificationController::class, 'markAsRead']);
 
     Route::apiResource('clients', ClientController::class)->only(['index', 'show'])->middleware("role:{$businessReadRoles}");
     Route::apiResource('compteurs', CompteurController::class)->only(['index', 'show'])->middleware("role:{$businessReadRoles}");
@@ -64,7 +66,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('secteurs', SecteurController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('pannes', PanneController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('pannes', PanneController::class)->only(['update'])->middleware("role:{$fieldUpdateRoles}");
-    Route::apiResource('reparations', ReparationController::class)->only(['store', 'update'])->middleware("role:{$repairWriteRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['update'])->middleware("role:{$repairUpdateRoles}");
     Route::apiResource('interventions', InterventionController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('interventions', InterventionController::class)->only(['update'])->middleware("role:{$fieldUpdateRoles}");
     Route::apiResource('releves', ReleveController::class)->only(['store', 'update'])->parameters(['releves' => 'releve'])->middleware("role:{$operationalWriteRoles}");

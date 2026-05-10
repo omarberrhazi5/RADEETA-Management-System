@@ -10,12 +10,15 @@ import {
   ChevronUp,
   ClipboardList,
   KeyRound,
+  LockKeyhole,
+  Pencil,
   Plus,
   Save,
   Search,
   Settings,
   Shield,
   SlidersHorizontal,
+  Trash2,
   Users,
   X,
 } from 'lucide-react';
@@ -155,11 +158,15 @@ export default function Administration() {
 
 function UsersTab({ users, notify }) {
   const { t } = useTranslation();
+  const { user: currentUser } = useAuth();
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [sort, setSort] = useState({ key: 'identifiant', direction: 'asc' });
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [resetUser, setResetUser] = useState(null);
+  const [deleteUser, setDeleteUser] = useState(null);
   const pageSize = 10;
 
   const rows = useMemo(() => {
@@ -234,7 +241,19 @@ function UsersTab({ users, notify }) {
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{user.email ?? '-'}</td>
                 <td className="whitespace-nowrap px-4 py-3"><Badge label={translateRole(t, user.role)} color={roleColors[user.role] ?? 'gray'} /></td>
                 <td className="whitespace-nowrap px-4 py-3"><Badge label={t('statuses.active')} color="green" /></td>
-                <td className="px-4 py-3 text-right text-xs text-gray-400">{t('tables.rbacManagement')}</td>
+                <td className="px-4 py-3">
+                  <div className="flex justify-end gap-2">
+                    <IconAction label={t('buttons.edit')} color="text-blue-500 hover:border-blue-100 hover:bg-blue-50" onClick={() => setEditingUser(user)}>
+                      <Pencil size={16} strokeWidth={1.7} />
+                    </IconAction>
+                    <IconAction label={t('administration.resetPassword')} color="text-amber-500 hover:border-amber-100 hover:bg-amber-50" onClick={() => setResetUser(user)}>
+                      <LockKeyhole size={16} strokeWidth={1.7} />
+                    </IconAction>
+                    <IconAction label={t('buttons.delete')} color="text-red-500 hover:border-red-100 hover:bg-red-50" disabled={Number(currentUser?.id) === Number(user.id)} onClick={() => setDeleteUser(user)}>
+                      <Trash2 size={16} strokeWidth={1.7} />
+                    </IconAction>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -243,7 +262,25 @@ function UsersTab({ users, notify }) {
       {!users.loading && rows.length === 0 && <EmptyState message={t('common.emptyFiltered')} />}
       <Pagination currentPage={currentPage} totalPages={totalPages} onPage={setPage} />
       {modalOpen && <UserModal onClose={() => setModalOpen(false)} onCreated={() => { setModalOpen(false); users.refresh(); notify('success', t('administration.created')); }} notify={notify} />}
+      {editingUser && <UserEditModal user={editingUser} currentUser={currentUser} onClose={() => setEditingUser(null)} onSaved={() => { setEditingUser(null); users.refresh(); notify('success', t('administration.updated')); }} notify={notify} />}
+      {resetUser && <PasswordResetModal user={resetUser} onClose={() => setResetUser(null)} onSaved={() => { setResetUser(null); notify('success', t('administration.passwordReset')); }} notify={notify} />}
+      {deleteUser && <ConfirmDeleteModal user={deleteUser} onClose={() => setDeleteUser(null)} onDeleted={() => { setDeleteUser(null); users.refresh(); notify('success', t('administration.deleted')); }} notify={notify} />}
     </section>
+  );
+}
+
+function IconAction({ children, label, color, onClick, disabled = false }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-transparent bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-300 disabled:hover:translate-y-0 disabled:hover:border-transparent ${color}`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -305,6 +342,163 @@ function UserModal({ onClose, onCreated, notify }) {
           <Button variant="primary" type="submit" loading={saving}>{t('buttons.create')}</Button>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
+  const { t } = useTranslation();
+  const isSelf = Number(currentUser?.id) === Number(user.id);
+  const [values, setValues] = useState({
+    prenom: user.prenom ?? '',
+    nom: user.nom ?? '',
+    email: user.email ?? '',
+    role: user.role ?? ROLES.VIEWER,
+  });
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  function update(name, value) {
+    setValues((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+  }
+
+  function validate() {
+    const next = {};
+    if (!values.nom.trim()) next.nom = t('forms.required');
+    if (!values.role) next.role = t('forms.required');
+    if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) next.email = t('forms.invalidEmail');
+    return next;
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    const next = validate();
+    if (Object.keys(next).length) {
+      setErrors(next);
+      return;
+    }
+    try {
+      setSaving(true);
+      await endpoints.updateUser(user.id, {
+        prenom: values.prenom,
+        nom: values.nom,
+        email: values.email || null,
+        role: isSelf ? user.role : values.role,
+      });
+      onSaved();
+    } catch (error) {
+      const apiErrors = error.response?.data?.errors;
+      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('administration.updateFailed') });
+      notify('error', t('administration.updateFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title={t('administration.editUser')} onClose={onClose} maxWidth="max-w-2xl">
+      <form onSubmit={submit} className="space-y-4">
+        {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
+        {isSelf && <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">{t('administration.selfRoleLocked')}</div>}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Field label={t('forms.firstName')} name="prenom" value={values.prenom} error={errors.prenom} onChange={update} />
+          <Field label={t('forms.lastName')} name="nom" value={values.nom} error={errors.nom} onChange={update} required />
+          <Field label={t('forms.email')} name="email" type="email" value={values.email} error={errors.email} onChange={update} />
+          <Select label={t('forms.role')} name="role" value={values.role} error={errors.role} onChange={update} options={managedRoles.map((value) => [value, translateRole(t, value)])} required disabled={isSelf} />
+        </div>
+        <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+          <Button variant="secondary" onClick={onClose}>{t('buttons.cancel')}</Button>
+          <Button variant="primary" type="submit" loading={saving}>{t('buttons.saveChanges')}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function PasswordResetModal({ user, onClose, onSaved, notify }) {
+  const { t } = useTranslation();
+  const [values, setValues] = useState({ password: '', password_confirmation: '' });
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  function update(name, value) {
+    setValues((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    const next = {};
+    if (!values.password) next.password = t('forms.required');
+    if (values.password && values.password.length < 8) next.password = t('forms.minPassword');
+    if (values.password !== values.password_confirmation) next.password_confirmation = t('administration.passwordMismatch');
+    if (Object.keys(next).length) {
+      setErrors(next);
+      return;
+    }
+    try {
+      setSaving(true);
+      await endpoints.resetUserPassword(user.id, values);
+      onSaved();
+    } catch (error) {
+      const apiErrors = error.response?.data?.errors;
+      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('administration.passwordResetFailed') });
+      notify('error', t('administration.passwordResetFailed'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title={t('administration.resetPassword')} onClose={onClose} maxWidth="max-w-md">
+      <form onSubmit={submit} className="space-y-4">
+        {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">{userName(user)}</div>
+        <Field label={t('forms.password')} name="password" type="password" value={values.password} error={errors.password} onChange={update} required />
+        <Field label={t('administration.confirmPassword')} name="password_confirmation" type="password" value={values.password_confirmation} error={errors.password_confirmation} onChange={update} required />
+        <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+          <Button variant="secondary" onClick={onClose}>{t('buttons.cancel')}</Button>
+          <Button variant="primary" type="submit" loading={saving}><LockKeyhole size={15} />{t('administration.resetPassword')}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function ConfirmDeleteModal({ user, onClose, onDeleted, notify }) {
+  const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  async function remove() {
+    try {
+      setSaving(true);
+      setError('');
+      await endpoints.deleteUser(user.id);
+      onDeleted();
+    } catch (err) {
+      const message = err.response?.data?.message ?? t('administration.deleteFailed');
+      setError(message);
+      notify('error', message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title={t('administration.confirmDelete')} onClose={onClose} maxWidth="max-w-md">
+      <div className="space-y-4">
+        {error && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{error}</div>}
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-4">
+          <p className="text-sm font-bold text-red-600">{t('administration.deleteUserPrompt', { name: userName(user) })}</p>
+          <p className="mt-1 text-xs font-medium text-red-500">{t('administration.deleteUserWarning')}</p>
+        </div>
+        <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+          <Button variant="secondary" onClick={onClose}>{t('buttons.cancel')}</Button>
+          <Button variant="danger" onClick={remove} loading={saving}><Trash2 size={15} />{t('buttons.delete')}</Button>
+        </div>
+      </div>
     </Modal>
   );
 }
@@ -497,11 +691,11 @@ function Field({ label, name, value, onChange, error, type = 'text', required = 
   );
 }
 
-function Select({ label, name, value, options, onChange, error, required = false }) {
+function Select({ label, name, value, options, onChange, error, required = false, disabled = false }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
-      <select value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}>
+      <select value={value ?? ''} disabled={disabled} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}>
         {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
       </select>
       {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{Array.isArray(error) ? error[0] : error}</span>}

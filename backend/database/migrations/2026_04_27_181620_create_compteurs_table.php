@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('compteurs', function (Blueprint $table) {
             $table->id();
             $table->string('cadran')->unique();
+            $table->string('num_contrat')->nullable();
+            $table->string('num_tournee')->nullable();
+            $table->string('usage')->nullable();
             $table->enum('calibre', ['15', '20']);
             $table->string('marque')->nullable();
             $table->enum('service_type', ['water', 'electricity'])->default('water');

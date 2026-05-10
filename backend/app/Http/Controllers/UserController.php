@@ -75,6 +75,7 @@ class UserController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $this->assertDirecteur($request);
+        $actor = $request->user();
 
         $validated = $request->validate([
             'nom' => ['sometimes', 'required', 'string', 'max:255'],
@@ -89,6 +90,7 @@ class UserController extends Controller
 
         if (array_key_exists('role', $validated)) {
             $this->preventProductionDeveloper($validated['role']);
+            abort_if((int) $actor->id === (int) $user->id && $validated['role'] !== UserRole::Directeur->value, 422, 'A Directeur cannot change their own role.');
         }
 
         $beforeRole = $user->role instanceof UserRole ? $user->role->value : $user->role;
@@ -100,6 +102,39 @@ class UserController extends Controller
         ]);
 
         return (new UserResource($user))->response();
+    }
+
+    public function resetPassword(Request $request, User $user): JsonResponse
+    {
+        $this->assertDirecteur($request);
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user->update(['password' => $validated['password']]);
+
+        ActivityLog::record('Mot de passe utilisateur reinitialise', 'Administration', $request, [
+            'user_id' => $user->id,
+        ]);
+
+        return response()->json(['message' => 'Password reset successfully.']);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        $this->assertDirecteur($request);
+
+        abort_if((int) $request->user()->id === (int) $user->id, 422, 'A Directeur cannot delete their own account.');
+
+        $userId = $user->id;
+        $user->delete();
+
+        ActivityLog::record('Utilisateur supprime', 'Administration', $request, [
+            'user_id' => $userId,
+        ]);
+
+        return response()->json(['message' => 'User deleted successfully.']);
     }
 
     private function preventProductionDeveloper(UserRole|string $role): void

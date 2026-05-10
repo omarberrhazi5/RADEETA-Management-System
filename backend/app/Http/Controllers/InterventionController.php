@@ -8,6 +8,7 @@ use App\Models\ActivityLog;
 use App\Models\Intervention;
 use App\Models\Panne;
 use App\Policies\InterventionPolicy;
+use App\Services\NotificationService;
 use App\Support\OperatorAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,7 +54,7 @@ class InterventionController extends Controller
         return InterventionResource::collection($query->paginate($limit));
     }
 
-    public function store(Request $request, InterventionPolicy $policy): JsonResponse
+    public function store(Request $request, InterventionPolicy $policy, NotificationService $notifications): JsonResponse
     {
         abort_unless($policy->create($request->user()), 403, 'Forbidden');
 
@@ -64,6 +65,7 @@ class InterventionController extends Controller
 
         $intervention = Intervention::create($validated);
         ActivityLog::record('Intervention assignée', 'Interventions', $request, ['intervention_id' => $intervention->id]);
+        $notifications->interventionAssigned($intervention);
 
         return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter', 'technician')))->response()->setStatusCode(201);
     }
@@ -75,7 +77,7 @@ class InterventionController extends Controller
         return new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter', 'technician'));
     }
 
-    public function update(Request $request, Intervention $intervention, InterventionPolicy $policy): JsonResponse
+    public function update(Request $request, Intervention $intervention, InterventionPolicy $policy, NotificationService $notifications): JsonResponse
     {
         abort_unless($policy->update($request->user(), $intervention), 403, 'Forbidden');
 
@@ -94,6 +96,7 @@ class InterventionController extends Controller
                 'previous_status' => $previousStatus,
                 'current_status' => $validated['status'],
             ]);
+            $notifications->statusChanged($intervention, $previousStatus, $validated['status']);
         } else {
             ActivityLog::record('Intervention modifiée', 'Interventions', $request, ['intervention_id' => $intervention->id]);
         }

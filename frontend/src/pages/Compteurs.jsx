@@ -20,6 +20,19 @@ export default function Compteurs() {
 
   const fields = useMemo(() => [
     { name: 'cadran', label: t('forms.cadran'), required: true },
+    { name: 'num_contrat', label: t('forms.contractNumber'), placeholder: 'N/A' },
+    { name: 'num_tournee', label: t('forms.routeNumber'), placeholder: 'N/A' },
+    {
+      name: 'usage',
+      label: t('forms.subscriptionType'),
+      type: 'select',
+      defaultValue: 'domestic',
+      options: [
+        { value: 'domestic', label: t('subscriptions.domestic') },
+        { value: 'commercial', label: t('subscriptions.commercial') },
+        { value: 'industrial', label: t('subscriptions.industrial') },
+      ],
+    },
     { name: 'id_client', label: t('forms.clientId'), type: 'number', required: true },
     { name: 'id_secteur', label: t('forms.sectorId'), type: 'number', required: true },
     {
@@ -49,7 +62,13 @@ export default function Compteurs() {
   ], [t]);
 
   async function saveMeter(values) {
-    const payload = { ...values, index_releve: Number(values.index_releve) };
+    const payload = {
+      ...values,
+      num_contrat: values.num_contrat?.trim() || null,
+      num_tournee: values.num_tournee?.trim() || null,
+      usage: values.usage?.trim() || null,
+      index_releve: Number(values.index_releve),
+    };
 
     if (formState?.item) {
       await api.put(`/compteurs/${formState.item.id_compteur ?? formState.item.id}`, payload);
@@ -86,9 +105,9 @@ export default function Compteurs() {
         columns={[
           { key: 'cadran', header: t('tables.cadran') },
           { key: 'type_produit', header: t('tables.service'), render: (row) => <Badge label={t(`services.${row.service_type ?? 'water'}`)} color={row.service_type === 'electricity' ? 'amber' : 'blue'} /> },
-          { key: 'num_contrat', header: t('tables.contractNumber') },
-          { key: 'num_tournee', header: t('tables.tournee') },
-          { key: 'usage', header: t('tables.usage') },
+          { key: 'num_contrat', header: t('tables.contractNumber'), render: (row) => row.num_contrat || 'N/A' },
+          { key: 'num_tournee', header: t('tables.tournee'), render: (row) => row.num_tournee || 'N/A' },
+          { key: 'usage', header: t('tables.usage'), render: (row) => row.usage && row.usage !== 'N/A' ? t(`subscriptions.${row.usage}`, { defaultValue: row.usage }) : 'N/A' },
           { key: 'client', header: t('tables.client'), render: (row) => row.client ? `${row.client.nom ?? ''} ${row.client.prenom ?? ''}`.trim() : '-' },
           { key: 'secteur', header: t('tables.sector'), render: (row) => row.secteur?.nom_secteur ?? '-' },
         ]}

@@ -22,6 +22,7 @@ class Panne extends Model
         'id_compteur',
         'date_panne',
         'anomalie',
+        'description',
         'status',
         'assigned_to',
     ];

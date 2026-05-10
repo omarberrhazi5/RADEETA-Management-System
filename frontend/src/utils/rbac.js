@@ -26,7 +26,7 @@ export const MODULE_PERMISSIONS = {
   interventions: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER],
   dashboard: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER, ROLES.DEVELOPER],
   reports: [ROLES.RESPONSABLE, ROLES.MANAGER],
-  notifications: [ROLES.RESPONSABLE],
+  notifications: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER, ROLES.DEVELOPER],
 };
 
 const prod = import.meta.env.PROD;
@@ -76,7 +76,7 @@ export function canCreate(role, resource) {
 
 export function canUpdate(role, resource) {
   if (role === ROLES.TECHNICIAN) {
-    return ['pannes', 'interventions'].includes(resource);
+    return ['pannes', 'reparations', 'interventions'].includes(resource);
   }
 
   if (role === ROLES.MANAGER) {

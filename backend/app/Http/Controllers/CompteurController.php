@@ -28,6 +28,9 @@ class CompteurController extends Controller
     {
         $validated = $request->validate([
             'cadran' => ['required', 'string', 'max:255', Rule::unique('compteurs', 'cadran')],
+            'num_contrat' => ['nullable', 'string', 'max:255'],
+            'num_tournee' => ['nullable', 'string', 'max:255'],
+            'usage' => ['nullable', 'string', 'max:255'],
             'calibre' => ['required', Rule::in(['15', '20'])],
             'marque' => ['nullable', 'string', 'max:255'],
             'service_type' => ['required', Rule::in(['water', 'electricity'])],
@@ -56,6 +59,9 @@ class CompteurController extends Controller
     {
         $validated = $request->validate([
             'cadran' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('compteurs', 'cadran')->ignore($compteur)],
+            'num_contrat' => ['nullable', 'string', 'max:255'],
+            'num_tournee' => ['nullable', 'string', 'max:255'],
+            'usage' => ['nullable', 'string', 'max:255'],
             'calibre' => ['sometimes', 'required', Rule::in(['15', '20'])],
             'marque' => ['nullable', 'string', 'max:255'],
             'service_type' => ['sometimes', 'required', Rule::in(['water', 'electricity'])],

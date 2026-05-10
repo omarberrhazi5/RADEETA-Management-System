@@ -370,6 +370,20 @@
     },
     "usersTitle": "Utilisateurs",
     "created": "Utilisateur cree avec succes.",
+    "updated": "Utilisateur modifie avec succes.",
+    "deleted": "Utilisateur supprime avec succes.",
+    "editUser": "Modifier l'utilisateur",
+    "resetPassword": "Reinitialiser le mot de passe",
+    "passwordReset": "Mot de passe reinitialise avec succes.",
+    "passwordResetFailed": "Impossible de reinitialiser le mot de passe.",
+    "confirmPassword": "Confirmer le mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "confirmDelete": "Confirmer la suppression",
+    "deleteFailed": "Impossible de supprimer cet utilisateur.",
+    "deleteUserPrompt": "Supprimer {{name}} ?",
+    "deleteUserWarning": "Cette action est irreversible.",
+    "selfRoleLocked": "Votre propre role est verrouille pour eviter un blocage systeme.",
+    "updateFailed": "Impossible de modifier l'utilisateur.",
     "createFailed": "Impossible de creer l'utilisateur.",
     "creationImpossible": "Creation impossible.",
     "generalSettings": "Parametres generaux",
@@ -436,16 +450,31 @@
     "": ""
   },
   "notificationTypes": {
+    "anomaly_created": {
+      "label": "Nouvelle anomalie",
+      "title": "Nouvelle anomalie creee",
+      "message": "L'anomalie #{{id}} a ete signalee pour le compteur {{meter}}."
+    },
     "panne_assigned": {
       "label": "Anomalie affectee",
       "title": "Anomalie affectee",
       "message": "L'anomalie #{{id}} a ete affectee.",
       "messageWithSector": "L'anomalie #{{id}} a ete affectee dans {{sector}}."
     },
+    "intervention_assigned": {
+      "label": "Intervention affectee",
+      "title": "Intervention affectee",
+      "message": "L'intervention #{{id}} a ete affectee."
+    },
     "repair_completed": {
       "label": "Reparation terminee",
       "title": "Reparation terminee",
       "message": "La reparation #{{id}} est terminee pour l'anomalie #{{panneId}}."
+    },
+    "status_changed": {
+      "label": "Statut modifie",
+      "title": "Statut modifie",
+      "message": "L'intervention #{{id}} est passee de {{from}} a {{to}}."
     },
     "user_created": {
       "label": "Utilisateur cree",

@@ -76,7 +76,7 @@ export function translateNotificationTitle(t, item) {
     if (translated) return translated;
   }
 
-  return t(`notificationTitles.${compactString(item?.title)}`, { defaultValue: t('notifications.title') });
+  return t(`notificationTitles.${compactString(item?.title)}`, { defaultValue: compactString(item?.title) || t('notifications.title') });
 }
 
 export function translateNotificationMessage(t, item) {
@@ -92,15 +92,27 @@ export function translateNotificationMessage(t, item) {
       : t('notificationTypes.panne_assigned.message', { id: panneId });
   }
 
+  if (type === 'anomaly_created') {
+    return t('notificationTypes.anomaly_created.message', { id: meta.panne_id, meter: meta.meter_cadran ?? t('common.notAvailable') });
+  }
+
+  if (type === 'intervention_assigned') {
+    return t('notificationTypes.intervention_assigned.message', { id: meta.intervention_id });
+  }
+
   if (type === 'repair_completed') {
     return t('notificationTypes.repair_completed.message', { id: repairId, panneId });
+  }
+
+  if (type === 'status_changed') {
+    return t('notificationTypes.status_changed.message', { id: meta.intervention_id, from: meta.previous_status, to: meta.current_status });
   }
 
   if (type === 'user_created') {
     return t('notificationTypes.user_created.message');
   }
 
-  return t(`notificationMessages.${compactString(item?.message)}`, { defaultValue: t('notifications.messageUnavailable') });
+  return t(`notificationMessages.${compactString(item?.message)}`, { defaultValue: compactString(item?.message) || t('notifications.messageUnavailable') });
 }
 
 export function currentLocale(i18n) {

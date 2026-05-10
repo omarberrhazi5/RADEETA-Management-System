@@ -14,6 +14,7 @@ class ReparationResource extends JsonResource
             'id_reparation' => $this->id,
             'id_panne' => $this->id_panne,
             'id_plombier' => $this->id_plombier,
+            'technician_id' => $this->id_plombier,
             'date_reparation' => $this->date_reparation?->toDateString(),
             'description' => $this->description,
             'cout' => null,

@@ -25,8 +25,35 @@ class PanneController extends Controller
             $query->where('assigned_to', $request->user()->id);
         }
 
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($searchQuery) use ($search): void {
+                $searchQuery
+                    ->where('id', 'like', "%{$search}%")
+                    ->orWhere('id_compteur', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('anomalie', 'like', "%{$search}%")
+                    ->orWhereHas('compteur', function ($meterQuery) use ($search): void {
+                        $meterQuery
+                            ->where('cadran', 'like', "%{$search}%")
+                            ->orWhere('num_contrat', 'like', "%{$search}%")
+                            ->orWhere('num_tournee', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('assignedOperator', function ($operatorQuery) use ($search): void {
+                        $operatorQuery
+                            ->where('nom', 'like', "%{$search}%")
+                            ->orWhere('prenom', 'like', "%{$search}%")
+                            ->orWhere('identifiant', 'like', "%{$search}%");
+                    });
+            });
+        }
+
         if (request('sort') === 'recent') {
             $query->latest('date_panne');
+        }
+
+        if ($request->boolean('all')) {
+            return PanneResource::collection($query->get());
         }
 
         return PanneResource::collection($query->paginate($limit));
@@ -40,6 +67,7 @@ class PanneController extends Controller
             'id_compteur' => ['required', Rule::exists('compteurs', 'id')->whereNull('deleted_at')],
             'date_panne' => ['required', 'date'],
             'anomalie' => ['required', Rule::enum(PanneAnomalie::class)],
+            'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
             'assigned_to' => ['nullable', Rule::exists('users', 'id')->where('role', UserRole::Technician->value)],
         ]);
@@ -54,6 +82,8 @@ class PanneController extends Controller
         if ($panne->assigned_to) {
             $notifications->panneAssigned($panne);
         }
+
+        $notifications->anomalyCreated($panne);
 
         return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')))->response()->setStatusCode(201);
     }
@@ -73,6 +103,7 @@ class PanneController extends Controller
             'id_compteur' => ['sometimes', 'required', Rule::exists('compteurs', 'id')->whereNull('deleted_at')],
             'date_panne' => ['sometimes', 'required', 'date'],
             'anomalie' => ['sometimes', 'required', Rule::enum(PanneAnomalie::class)],
+            'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
             'assigned_to' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('role', UserRole::Technician->value)],
         ]);
@@ -107,10 +138,11 @@ class PanneController extends Controller
         $mapped = [];
 
         if ($request->has('statut') && ! $request->has('status')) {
-            $mapped['status'] = match ($request->input('statut')) {
-                'résolue', 'resolue', 'resolved' => PanneStatus::Resolved->value,
-                default => PanneStatus::Open->value,
-            };
+            $mapped['status'] = $this->normalizeStatus($request->input('statut'));
+        }
+
+        if ($request->has('status')) {
+            $mapped['status'] = $this->normalizeStatus($request->input('status'));
         }
 
         if ($request->has('anomalie')) {
@@ -160,6 +192,15 @@ class PanneController extends Controller
             'Fraude', 'Existence by-pass sur CG' => PanneAnomalie::BranchementIllicite->value,
             'Compteur déplombé' => PanneAnomalie::PlombRompu->value,
             default => $anomalie,
+        };
+    }
+
+    private function normalizeStatus(?string $status): ?string
+    {
+        return match ($status) {
+            PanneStatus::Resolved->value, 'réparé', 'repare', 'répare', 'reparee', 'réparée', 'résolue', 'resolue' => PanneStatus::Resolved->value,
+            PanneStatus::Open->value, 'ouvert', 'ouverte' => PanneStatus::Open->value,
+            default => $status,
         };
     }
 }

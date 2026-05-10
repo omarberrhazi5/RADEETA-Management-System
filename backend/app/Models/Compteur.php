@@ -14,6 +14,9 @@ class Compteur extends Model
 
     protected $fillable = [
         'cadran',
+        'num_contrat',
+        'num_tournee',
+        'usage',
         'calibre',
         'marque',
         'service_type',

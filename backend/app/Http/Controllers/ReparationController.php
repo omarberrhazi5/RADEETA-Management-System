@@ -58,6 +58,7 @@ class ReparationController extends Controller
         $this->authorizeOperatorReparationAccess($request, $reparation);
 
         $validated = $request->validated();
+        $this->limitOperatorUpdatePayload($request, $validated);
 
         DB::transaction(function () use ($reparation, $validated): void {
             $oldPanneId = $reparation->id_panne;
@@ -117,5 +118,18 @@ class ReparationController extends Controller
             403,
             'Forbidden'
         );
+    }
+
+    private function limitOperatorUpdatePayload(Request $request, array &$validated): void
+    {
+        if (! OperatorAccess::isOperator($request->user())) {
+            return;
+        }
+
+        $validated = array_intersect_key($validated, array_flip([
+            'date_reparation',
+            'description',
+            'id_plombier',
+        ]));
     }
 }
