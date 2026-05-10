@@ -9,6 +9,7 @@ import {
   ListChecks,
   LogOut,
   Map,
+  Settings,
   Shield,
   Users,
   Wrench,
@@ -19,46 +20,59 @@ import { ROLES, hasRole } from '../utils/rbac';
 import BrandLogo from '../components/BrandLogo';
 
 const nav = [
-  { labelKey: 'sidebar.dashboard', path: '/admin/dashboard', icon: LayoutDashboard, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.administration', path: '/administration', icon: Shield, roles: [ROLES.DIRECTEUR] },
-  { labelKey: 'sidebar.clients', path: '/admin/clients', icon: Users, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.compteurs', path: '/admin/compteurs', icon: Gauge, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.secteurs', path: '/admin/secteurs', icon: Map, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.anomalies', path: '/admin/pannes', icon: ClipboardList, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.interventions', path: '/admin/interventions', icon: ClipboardCheck, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.repairs', path: '/admin/repairs', icon: Wrench, roles: [ROLES.RESPONSABLE] },
-  { labelKey: 'sidebar.reports', path: '/admin/reports', icon: FileBarChart, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.dashboard', path: '/admin/dashboard', icon: LayoutDashboard, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.secteurs', path: '/admin/secteurs', icon: Map, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.clients', path: '/admin/clients', icon: Users, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.compteurs', path: '/admin/compteurs', icon: Gauge, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.anomalies', path: '/admin/pannes', icon: ClipboardList, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.repairs', path: '/admin/repairs', icon: Wrench, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.interventions', path: '/admin/interventions', icon: ClipboardCheck, roles: [ROLES.RESPONSABLE] },
+  { group: 'navigation', labelKey: 'sidebar.reports', path: '/admin/reports', icon: FileBarChart, roles: [ROLES.RESPONSABLE] },
+  { group: 'administration', labelKey: 'sidebar.administration', path: '/administration', icon: Shield, roles: [ROLES.DIRECTEUR] },
+  { group: 'system', labelKey: 'administration.tabs.settings', path: '/administration?tab=settings', icon: Settings, roles: [ROLES.DIRECTEUR] },
+  { group: 'system', labelKey: 'administration.tabs.logs', path: '/administration?tab=logs', icon: ClipboardList, roles: [ROLES.DIRECTEUR] },
 
-  { labelKey: 'sidebar.dashboard', path: '/manager/dashboard', icon: LayoutDashboard, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.clients', path: '/manager/clients', icon: Users, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.compteurs', path: '/manager/compteurs', icon: Gauge, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.secteurs', path: '/manager/secteurs', icon: Map, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.anomalies', path: '/manager/pannes', icon: ClipboardList, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.interventions', path: '/manager/interventions', icon: ClipboardCheck, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.repairs', path: '/manager/repairs', icon: Wrench, roles: [ROLES.MANAGER] },
-  { labelKey: 'sidebar.reports', path: '/manager/reports', icon: FileBarChart, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.dashboard', path: '/manager/dashboard', icon: LayoutDashboard, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.secteurs', path: '/manager/secteurs', icon: Map, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.clients', path: '/manager/clients', icon: Users, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.compteurs', path: '/manager/compteurs', icon: Gauge, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.anomalies', path: '/manager/pannes', icon: ClipboardList, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.repairs', path: '/manager/repairs', icon: Wrench, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.interventions', path: '/manager/interventions', icon: ClipboardCheck, roles: [ROLES.MANAGER] },
+  { group: 'navigation', labelKey: 'sidebar.reports', path: '/manager/reports', icon: FileBarChart, roles: [ROLES.MANAGER] },
 
-  { labelKey: 'sidebar.dashboard', path: '/technician/dashboard', icon: LayoutDashboard, roles: [ROLES.TECHNICIAN] },
-  { labelKey: 'sidebar.myTasks', path: '/technician/tasks', icon: ListChecks, roles: [ROLES.TECHNICIAN] },
-  { labelKey: 'sidebar.anomalies', path: '/technician/pannes', icon: ClipboardList, roles: [ROLES.TECHNICIAN] },
-  { labelKey: 'sidebar.interventions', path: '/technician/interventions', icon: ClipboardCheck, roles: [ROLES.TECHNICIAN] },
-  { labelKey: 'sidebar.repairs', path: '/technician/repairs', icon: Wrench, roles: [ROLES.TECHNICIAN] },
+  { group: 'navigation', labelKey: 'sidebar.dashboard', path: '/technician/dashboard', icon: LayoutDashboard, roles: [ROLES.TECHNICIAN] },
+  { group: 'navigation', labelKey: 'sidebar.myTasks', path: '/technician/tasks', icon: ListChecks, roles: [ROLES.TECHNICIAN] },
+  { group: 'navigation', labelKey: 'sidebar.anomalies', path: '/technician/pannes', icon: ClipboardList, roles: [ROLES.TECHNICIAN] },
+  { group: 'navigation', labelKey: 'sidebar.repairs', path: '/technician/repairs', icon: Wrench, roles: [ROLES.TECHNICIAN] },
+  { group: 'navigation', labelKey: 'sidebar.interventions', path: '/technician/interventions', icon: ClipboardCheck, roles: [ROLES.TECHNICIAN] },
 
-  { labelKey: 'sidebar.dashboard', path: '/viewer/dashboard', icon: LayoutDashboard, roles: [ROLES.VIEWER] },
-  { labelKey: 'sidebar.clients', path: '/viewer/clients', icon: Users, roles: [ROLES.VIEWER] },
-  { labelKey: 'sidebar.compteurs', path: '/viewer/compteurs', icon: Gauge, roles: [ROLES.VIEWER] },
-  { labelKey: 'sidebar.secteurs', path: '/viewer/secteurs', icon: Map, roles: [ROLES.VIEWER] },
-  { labelKey: 'sidebar.anomalies', path: '/viewer/pannes', icon: ClipboardList, roles: [ROLES.VIEWER] },
-  { labelKey: 'sidebar.interventions', path: '/viewer/interventions', icon: ClipboardCheck, roles: [ROLES.VIEWER] },
+  { group: 'navigation', labelKey: 'sidebar.dashboard', path: '/viewer/dashboard', icon: LayoutDashboard, roles: [ROLES.VIEWER] },
+  { group: 'navigation', labelKey: 'sidebar.secteurs', path: '/viewer/secteurs', icon: Map, roles: [ROLES.VIEWER] },
+  { group: 'navigation', labelKey: 'sidebar.clients', path: '/viewer/clients', icon: Users, roles: [ROLES.VIEWER] },
+  { group: 'navigation', labelKey: 'sidebar.compteurs', path: '/viewer/compteurs', icon: Gauge, roles: [ROLES.VIEWER] },
+  { group: 'navigation', labelKey: 'sidebar.anomalies', path: '/viewer/pannes', icon: ClipboardList, roles: [ROLES.VIEWER] },
+  { group: 'navigation', labelKey: 'sidebar.interventions', path: '/viewer/interventions', icon: ClipboardCheck, roles: [ROLES.VIEWER] },
+];
+
+const groups = [
+  ['navigation', 'Navigation'],
+  ['administration', 'Administration'],
+  ['system', 'Système'],
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
   const { t } = useTranslation();
   const { logout, role, user } = useAuth();
+  const isAdmin = role === ROLES.DIRECTEUR;
   const effectiveRole = role === ROLES.DIRECTEUR ? ROLES.RESPONSABLE : role;
   const items = nav.filter((item) => {
+    if ((item.group === 'administration' || item.group === 'system') && !isAdmin) {
+      return false;
+    }
+
     if (item.path === '/administration') {
-      return role === ROLES.DIRECTEUR;
+      return isAdmin;
     }
 
     return hasRole(effectiveRole, item.roles);
@@ -66,24 +80,34 @@ export default function Sidebar({ isOpen, onClose }) {
   const initials = `${user?.nom?.[0] ?? ''}${user?.prenom?.[0] ?? ''}`.toUpperCase() || 'U';
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200/80 bg-white transition duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`fixed inset-y-0 left-0 z-40 flex h-full w-64 flex-col border-r border-slate-200/80 bg-white transition duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="border-b border-slate-100 px-5 py-5">
         <BrandLogo />
         <div className="mt-2 text-xs font-medium text-slate-500">{t('sidebar.brandSubtitle')}</div>
       </div>
 
       <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-5">
-        {items.map(({ labelKey, path, icon: Icon }) => (
-          <NavLink
-            key={path}
-            to={path}
-            onClick={onClose}
-            className={({ isActive }) => `relative flex min-h-11 items-center gap-3 rounded-full border-l-4 px-3 text-sm font-semibold transition duration-300 ${isActive ? 'border-[var(--srm-green)] bg-[var(--srm-green-soft)] text-[var(--srm-green)] shadow-[0_8px_22px_rgb(112_184_48_/_0.10)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}
-          >
-            <Icon size={17} strokeWidth={1.5} />
-            {t(labelKey)}
-          </NavLink>
-        ))}
+        {groups.map(([group, label]) => {
+          const groupItems = items.filter((item) => item.group === group);
+          if (groupItems.length === 0) return null;
+
+          return (
+            <div key={group} className="space-y-1.5">
+              <div className="px-3 pb-1 pt-3 text-xs font-bold uppercase tracking-wide text-slate-400">{label}</div>
+              {groupItems.map(({ labelKey, path, icon: Icon }) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  onClick={onClose}
+                  className={({ isActive }) => `relative flex min-h-11 items-center gap-3 rounded-full border-l-4 px-3 text-sm font-semibold transition duration-300 ${isActive ? 'border-[var(--srm-green)] bg-[var(--srm-green-soft)] text-[var(--srm-green)] shadow-[0_8px_22px_rgb(112_184_48_/_0.10)]' : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950'}`}
+                >
+                  <Icon size={17} strokeWidth={1.5} />
+                  {t(labelKey)}
+                </NavLink>
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="border-t border-slate-100 p-4">

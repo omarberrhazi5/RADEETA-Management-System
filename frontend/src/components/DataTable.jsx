@@ -83,7 +83,7 @@ export default function DataTable({
         )}
       </div>
 
-      <div className="sticky top-16 z-10 rounded-2xl border border-white/80 bg-white/70 p-3 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] backdrop-blur-md">
+      <div className="rounded-2xl border border-white/80 bg-white/70 p-3 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] backdrop-blur-md">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1">
             <Search size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />

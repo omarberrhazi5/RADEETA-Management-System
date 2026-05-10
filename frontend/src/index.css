@@ -107,9 +107,13 @@
 
 .srm-app table thead {
   background: rgb(248 250 252 / 0.84);
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .srm-app table th {
+  background: rgb(248 250 252 / 0.96);
   color: #64748b;
   font-weight: 700;
   letter-spacing: 0.04em;

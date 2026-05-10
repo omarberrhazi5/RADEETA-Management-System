@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import {
   Bell,
   Check,
@@ -90,11 +91,22 @@ function SkeletonRows({ columns = 7 }) {
 
 export default function Administration() {
   const { t } = useTranslation();
+  const location = useLocation();
   const { role } = useAuth();
   const users = useResource(endpoints.users, { limit: 500 });
   const logs = useResource(endpoints.logs, { limit: 500 });
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    return tabs.some((item) => item.key === tab) ? tab : 'users';
+  });
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('tab');
+    if (tabs.some((item) => item.key === tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
 
   function notify(type, message) {
     setToast({ type, message });

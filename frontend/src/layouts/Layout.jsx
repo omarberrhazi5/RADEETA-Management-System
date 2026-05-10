@@ -7,9 +7,10 @@ import Topbar from './Topbar';
 export default function Layout() {
   const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [contentScrolled, setContentScrolled] = useState(false);
 
   return (
-    <div className="srm-app min-h-screen bg-slate-50 text-slate-900">
+    <div className="srm-app h-screen overflow-hidden bg-slate-50 text-slate-900">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       {sidebarOpen && (
         <button
@@ -20,9 +21,12 @@ export default function Layout() {
         />
       )}
 
-      <div className="min-h-screen min-w-0 overflow-x-hidden md:pl-64">
-        <Topbar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="w-full min-w-0 p-4 sm:p-6 lg:p-8">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden md:pl-64">
+        <Topbar onMenuClick={() => setSidebarOpen(true)} scrolled={contentScrolled} />
+        <main
+          onScroll={(event) => setContentScrolled(event.currentTarget.scrollTop > 0)}
+          className="w-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8"
+        >
           <Outlet />
         </main>
       </div>

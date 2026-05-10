@@ -39,7 +39,7 @@ const titles = {
   '/viewer/interventions': 'sidebar.interventions',
 };
 
-export default function Topbar({ onMenuClick }) {
+export default function Topbar({ onMenuClick, scrolled = false }) {
   const { i18n, t } = useTranslation();
   const { role } = useAuth();
   const { pathname } = useLocation();
@@ -52,7 +52,7 @@ export default function Topbar({ onMenuClick }) {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/70 bg-white/70 px-4 shadow-[0_8px_30px_rgb(0_0_0_/_0.025)] backdrop-blur-md sm:px-6">
+    <header className={`z-20 flex h-16 shrink-0 items-center gap-3 border-b border-slate-200/70 bg-white/70 px-4 backdrop-blur-md transition-shadow duration-300 sm:px-6 ${scrolled ? 'shadow-[0_8px_30px_rgb(0_0_0_/_0.055)]' : 'shadow-[0_8px_30px_rgb(0_0_0_/_0.025)]'}`}>
       <button type="button" onClick={onMenuClick} className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-slate-600 transition duration-300 hover:bg-slate-100 md:hidden" aria-label={t('common.openNavigation')}>
         <Menu size={20} strokeWidth={1.5} />
       </button>
