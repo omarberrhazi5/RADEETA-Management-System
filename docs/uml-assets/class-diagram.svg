@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1020" viewBox="0 0 1400 1020">
+  <defs>
+    <style>
+      .title{font:700 28px Arial, sans-serif;fill:#0f172a}
+      .sub{font:600 13px Arial, sans-serif;fill:#334155}
+      .panel-domain{fill:#eff6ff;stroke:#bfdbfe;stroke-width:2}
+      .panel-rules{fill:#fff7ed;stroke:#fed7aa;stroke-width:2}
+      .panel-ctrl{fill:#f8fafc;stroke:#cbd5e1;stroke-width:2}
+      .panel-title{font:700 18px Arial, sans-serif;fill:#0f172a}
+      .class-box{fill:#fff;stroke:#2563eb;stroke-width:2}
+      .class-head{fill:#2563eb}
+      .class-title{font:700 14px Arial, sans-serif;fill:#fff}
+      .member{font:11px Arial, sans-serif;fill:#1f2937}
+      .assoc{stroke:#334155;stroke-width:2}
+      .dep{stroke:#f97316;stroke-width:2;stroke-dasharray:7 6}
+      .inh{stroke:#0f172a;stroke-width:2}
+      .legend{font:12px Arial, sans-serif;fill:#334155}
+    </style>
+  </defs>
+  <rect width="1400" height="1020" fill="#ffffff"/>
+  <text x="700" y="36" text-anchor="middle" class="title">Diagramme de classes UML - synthese du code</text>
+  <text x="700" y="58" text-anchor="middle" class="sub">La visualisation ci-dessous se concentre sur les classes metier et les regles. Le code PlantUML complet est fourni ensuite.</text>
+
+  <rect x="30" y="80" width="870" height="900" rx="24" ry="24" class="panel-domain"/>
+  <text x="52" y="112" class="panel-title">Domaine et persistence</text>
+
+  <rect x="920" y="80" width="220" height="430" rx="24" ry="24" class="panel-rules"/>
+  <text x="942" y="112" class="panel-title">Services / regles</text>
+
+  <rect x="1160" y="80" width="210" height="430" rx="24" ry="24" class="panel-ctrl"/>
+  <text x="1182" y="112" class="panel-title">Controllers</text>
+
+  <!-- Authenticatable -->
+  <rect x="70" y="140" width="180" height="76" rx="12" ry="12" class="class-box"/>
+  <rect x="70" y="140" width="180" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="160" y="159" text-anchor="middle" class="class-title">Authenticatable</text>
+  <text x="84" y="190" class="member">+ login identity</text>
+
+  <!-- User -->
+  <rect x="70" y="250" width="220" height="170" rx="12" ry="12" class="class-box"/>
+  <rect x="70" y="250" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="180" y="269" text-anchor="middle" class="class-title">User</text>
+  <text x="84" y="300" class="member">+ nom, prenom</text>
+  <text x="84" y="318" class="member">+ identifiant, email</text>
+  <text x="84" y="336" class="member">+ agence, role</text>
+  <text x="84" y="362" class="member">+ reparations()</text>
+  <text x="84" y="380" class="member">+ interventions()</text>
+  <text x="84" y="398" class="member">+ assignedPannes()</text>
+
+  <!-- Secteur -->
+  <rect x="330" y="140" width="220" height="155" rx="12" ry="12" class="class-box"/>
+  <rect x="330" y="140" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="440" y="159" text-anchor="middle" class="class-title">Secteur</text>
+  <text x="344" y="190" class="member">+ nom_secteur</text>
+  <text x="344" y="208" class="member">+ emplacement</text>
+  <text x="344" y="226" class="member">+ agence, num_torne</text>
+  <text x="344" y="244" class="member">+ latitude, longitude</text>
+  <text x="344" y="270" class="member">+ compteurs()</text>
+  <text x="344" y="288" class="member">+ pannes()</text>
+
+  <!-- Client -->
+  <rect x="330" y="330" width="220" height="175" rx="12" ry="12" class="class-box"/>
+  <rect x="330" y="330" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="440" y="349" text-anchor="middle" class="class-title">Client</text>
+  <text x="344" y="380" class="member">+ police</text>
+  <text x="344" y="398" class="member">+ nom, prenom</text>
+  <text x="344" y="416" class="member">+ cin, telephone</text>
+  <text x="344" y="434" class="member">+ type_abonnement</text>
+  <text x="344" y="452" class="member">+ service_type, abonne</text>
+  <text x="344" y="478" class="member">+ compteurs()</text>
+  <text x="344" y="496" class="member">+ secteur()</text>
+
+  <!-- Compteur -->
+  <rect x="590" y="330" width="220" height="175" rx="12" ry="12" class="class-box"/>
+  <rect x="590" y="330" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="700" y="349" text-anchor="middle" class="class-title">Compteur</text>
+  <text x="604" y="380" class="member">+ cadran</text>
+  <text x="604" y="398" class="member">+ calibre, marque</text>
+  <text x="604" y="416" class="member">+ service_type</text>
+  <text x="604" y="434" class="member">+ index_releve</text>
+  <text x="604" y="460" class="member">+ client()</text>
+  <text x="604" y="478" class="member">+ secteur()</text>
+  <text x="604" y="496" class="member">+ pannes(), releves()</text>
+
+  <!-- Panne -->
+  <rect x="850" y="330" width="220" height="175" rx="12" ry="12" class="class-box"/>
+  <rect x="850" y="330" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="960" y="349" text-anchor="middle" class="class-title">Panne</text>
+  <text x="864" y="380" class="member">+ date_panne</text>
+  <text x="864" y="398" class="member">+ anomalie</text>
+  <text x="864" y="416" class="member">+ status</text>
+  <text x="864" y="434" class="member">+ assigned_to</text>
+  <text x="864" y="460" class="member">+ compteur()</text>
+  <text x="864" y="478" class="member">+ reparations()</text>
+  <text x="864" y="496" class="member">+ interventions()</text>
+
+  <!-- Setting -->
+  <rect x="70" y="540" width="220" height="110" rx="12" ry="12" class="class-box"/>
+  <rect x="70" y="540" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="180" y="559" text-anchor="middle" class="class-title">Setting</text>
+  <text x="84" y="590" class="member">+ key</text>
+  <text x="84" y="608" class="member">+ value</text>
+
+  <!-- ActivityLog -->
+  <rect x="70" y="690" width="220" height="145" rx="12" ry="12" class="class-box"/>
+  <rect x="70" y="690" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="180" y="709" text-anchor="middle" class="class-title">ActivityLog</text>
+  <text x="84" y="740" class="member">+ action, module</text>
+  <text x="84" y="758" class="member">+ ip_address</text>
+  <text x="84" y="776" class="member">+ metadata</text>
+  <text x="84" y="802" class="member">+ user()</text>
+  <text x="84" y="820" class="member">+ record(...)</text>
+
+  <!-- Reparation -->
+  <rect x="330" y="560" width="220" height="150" rx="12" ry="12" class="class-box"/>
+  <rect x="330" y="560" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="440" y="579" text-anchor="middle" class="class-title">Reparation</text>
+  <text x="344" y="610" class="member">+ id_panne</text>
+  <text x="344" y="628" class="member">+ id_plombier</text>
+  <text x="344" y="646" class="member">+ date_reparation</text>
+  <text x="344" y="664" class="member">+ description</text>
+  <text x="344" y="690" class="member">+ panne(), plombier()</text>
+
+  <!-- Releve -->
+  <rect x="590" y="560" width="220" height="168" rx="12" ry="12" class="class-box"/>
+  <rect x="590" y="560" width="220" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="700" y="579" text-anchor="middle" class="class-title">Releve</text>
+  <text x="604" y="610" class="member">+ compteur_id</text>
+  <text x="604" y="628" class="member">+ ancien_index, nouvel_index</text>
+  <text x="604" y="646" class="member">+ consommation</text>
+  <text x="604" y="664" class="member">+ periode_debut / fin</text>
+  <text x="604" y="690" class="member">+ compteur()</text>
+  <text x="604" y="708" class="member">+ creator()</text>
+
+  <!-- Intervention -->
+  <rect x="850" y="560" width="240" height="210" rx="12" ry="12" class="class-box"/>
+  <rect x="850" y="560" width="240" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="970" y="579" text-anchor="middle" class="class-title">Intervention</text>
+  <text x="864" y="610" class="member">+ intervention_number</text>
+  <text x="864" y="628" class="member">+ panne_id, client_id, meter_id</text>
+  <text x="864" y="646" class="member">+ technician_id</text>
+  <text x="864" y="664" class="member">+ service_type, work_type</text>
+  <text x="864" y="682" class="member">+ priority, status</text>
+  <text x="864" y="700" class="member">+ started_at, completed_at</text>
+  <text x="864" y="726" class="member">+ panne(), technician()</text>
+  <text x="864" y="744" class="member">+ client(), meter()</text>
+
+  <!-- Rules -->
+  <rect x="950" y="150" width="160" height="120" rx="12" ry="12" class="class-box"/>
+  <rect x="950" y="150" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1030" y="169" text-anchor="middle" class="class-title">NotificationService</text>
+  <text x="964" y="200" class="member">+ panneAssigned()</text>
+  <text x="964" y="218" class="member">+ repairCompleted()</text>
+  <text x="964" y="236" class="member">+ userCreated()</text>
+
+  <rect x="950" y="300" width="160" height="150" rx="12" ry="12" class="class-box"/>
+  <rect x="950" y="300" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1030" y="319" text-anchor="middle" class="class-title">OperatorAccess</text>
+  <text x="964" y="350" class="member">+ isOperator()</text>
+  <text x="964" y="368" class="member">+ scopePannes()</text>
+  <text x="964" y="386" class="member">+ scopeReparations()</text>
+  <text x="964" y="404" class="member">+ scopeReleves()</text>
+  <text x="964" y="422" class="member">+ scopeCompteurs()</text>
+
+  <rect x="950" y="480" width="160" height="110" rx="12" ry="12" class="class-box"/>
+  <rect x="950" y="480" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1030" y="499" text-anchor="middle" class="class-title">InterventionPolicy</text>
+  <text x="964" y="530" class="member">+ viewAny()</text>
+  <text x="964" y="548" class="member">+ view(), create()</text>
+  <text x="964" y="566" class="member">+ update()</text>
+
+  <rect x="950" y="630" width="160" height="140" rx="12" ry="12" class="class-box"/>
+  <rect x="950" y="630" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1030" y="649" text-anchor="middle" class="class-title">ReparationRequest</text>
+  <text x="964" y="680" class="member">+ authorize()</text>
+  <text x="964" y="698" class="member">+ rules()</text>
+  <text x="964" y="716" class="member">+ withValidator()</text>
+
+  <!-- Controllers -->
+  <rect x="1185" y="150" width="160" height="110" rx="12" ry="12" class="class-box"/>
+  <rect x="1185" y="150" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1265" y="169" text-anchor="middle" class="class-title">AuthController</text>
+  <text x="1199" y="200" class="member">+ login()</text>
+  <text x="1199" y="218" class="member">+ logout()</text>
+  <text x="1199" y="236" class="member">+ me(), clearTokens()</text>
+
+  <rect x="1185" y="290" width="160" height="110" rx="12" ry="12" class="class-box"/>
+  <rect x="1185" y="290" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1265" y="309" text-anchor="middle" class="class-title">PanneController</text>
+  <text x="1199" y="340" class="member">+ index(), store()</text>
+  <text x="1199" y="358" class="member">+ show(), update()</text>
+  <text x="1199" y="376" class="member">+ destroy()</text>
+
+  <rect x="1185" y="430" width="160" height="110" rx="12" ry="12" class="class-box"/>
+  <rect x="1185" y="430" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1265" y="449" text-anchor="middle" class="class-title">ReparationController</text>
+  <text x="1199" y="480" class="member">+ index(), store()</text>
+  <text x="1199" y="498" class="member">+ show(), update()</text>
+  <text x="1199" y="516" class="member">+ destroy()</text>
+
+  <rect x="1185" y="570" width="160" height="110" rx="12" ry="12" class="class-box"/>
+  <rect x="1185" y="570" width="160" height="28" rx="12" ry="12" class="class-head"/>
+  <text x="1265" y="589" text-anchor="middle" class="class-title">InterventionController</text>
+  <text x="1199" y="620" class="member">+ index(), store()</text>
+  <text x="1199" y="638" class="member">+ show(), update()</text>
+  <text x="1199" y="656" class="member">+ validated()</text>
+
+  <rect x="1178" y="720" width="174" height="156" rx="12" ry="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="1194" y="746" class="legend">Autres classes presentes</text>
+  <text x="1194" y="766" class="legend">dans le code PlantUML :</text>
+  <text x="1194" y="792" class="legend">ClientController</text>
+  <text x="1194" y="810" class="legend">ReleveController</text>
+  <text x="1194" y="828" class="legend">UserController</text>
+  <text x="1194" y="846" class="legend">SettingsController</text>
+  <text x="1194" y="864" class="legend">NotificationController</text>
+
+  <!-- domain relations -->
+  <line x1="160" y1="216" x2="180" y2="250" class="inh"/>
+  <polygon points="160,216 150,232 170,232" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+
+  <line x1="290" y1="335" x2="330" y2="420" class="assoc"/>
+  <line x1="550" y1="420" x2="590" y2="420" class="assoc"/>
+  <line x1="810" y1="420" x2="850" y2="420" class="assoc"/>
+  <line x1="440" y1="295" x2="440" y2="330" class="assoc"/>
+  <line x1="700" y1="505" x2="700" y2="560" class="assoc"/>
+  <line x1="960" y1="505" x2="970" y2="560" class="assoc"/>
+  <line x1="440" y1="505" x2="440" y2="560" class="assoc"/>
+  <line x1="260" y1="340" x2="850" y2="420" class="assoc"/>
+  <line x1="260" y1="360" x2="440" y2="635" class="assoc"/>
+  <line x1="260" y1="380" x2="700" y2="650" class="assoc"/>
+  <line x1="260" y1="400" x2="970" y2="650" class="assoc"/>
+  <line x1="180" y1="420" x2="180" y2="690" class="assoc"/>
+
+  <!-- dependencies -->
+  <line x1="1110" y1="205" x2="850" y2="380" class="dep"/>
+  <line x1="1110" y1="215" x2="440" y2="635" class="dep"/>
+  <line x1="1110" y1="225" x2="250" y2="320" class="dep"/>
+
+  <line x1="1110" y1="360" x2="250" y2="350" class="dep"/>
+  <line x1="1110" y1="372" x2="700" y2="420" class="dep"/>
+  <line x1="1110" y1="384" x2="960" y2="420" class="dep"/>
+  <line x1="1110" y1="396" x2="440" y2="635" class="dep"/>
+  <line x1="1110" y1="408" x2="700" y2="650" class="dep"/>
+
+  <line x1="1110" y1="535" x2="970" y2="650" class="dep"/>
+  <line x1="1110" y1="545" x2="250" y2="320" class="dep"/>
+
+  <line x1="1110" y1="690" x2="960" y2="420" class="dep"/>
+  <line x1="1110" y1="700" x2="440" y2="635" class="dep"/>
+  <line x1="1110" y1="710" x2="250" y2="320" class="dep"/>
+
+  <line x1="1185" y1="205" x2="290" y2="320" class="dep"/>
+  <line x1="1185" y1="215" x2="290" y2="760" class="dep"/>
+
+  <line x1="1185" y1="345" x2="1070" y2="205" class="dep"/>
+  <line x1="1185" y1="355" x2="1070" y2="360" class="dep"/>
+  <line x1="1185" y1="365" x2="960" y2="420" class="dep"/>
+
+  <line x1="1185" y1="485" x2="1030" y2="690" class="dep"/>
+  <line x1="1185" y1="495" x2="1070" y2="205" class="dep"/>
+  <line x1="1185" y1="505" x2="440" y2="635" class="dep"/>
+
+  <line x1="1185" y1="625" x2="1030" y2="535" class="dep"/>
+  <line x1="1185" y1="635" x2="1070" y2="360" class="dep"/>
+  <line x1="1185" y1="645" x2="970" y2="650" class="dep"/>
+
+  <!-- legend -->
+  <line x1="945" y1="920" x2="1005" y2="920" class="assoc"/>
+  <text x="1015" y="925" class="legend">association</text>
+  <line x1="1110" y1="920" x2="1170" y2="920" class="dep"/>
+  <text x="1180" y="925" class="legend">dependance</text>
+  <line x1="1260" y1="920" x2="1320" y2="920" class="inh"/>
+  <polygon points="1260,920 1250,936 1270,936" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+  <text x="1330" y="925" class="legend">heritage</text>
+</svg>

@@ -1,0 +1,103 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "directeur" as Directeur
+actor "responsable" as Responsable
+actor "manager" as Manager
+actor "technician" as Technician
+actor "viewer" as Viewer
+actor "developer" as Developer
+
+rectangle "RADEETA-Management-System" {
+  usecase "Se connecter /\nSe deconnecter" as UC_Auth
+  usecase "Consulter tableau de bord" as UC_Dashboard
+  usecase "Consulter donnees metier" as UC_ReadData
+  usecase "Consulter notifications" as UC_Notifications
+  usecase "Gerer `clients`" as UC_Clients
+  usecase "Gerer `compteurs`" as UC_Compteurs
+  usecase "Gerer `secteurs`" as UC_Secteurs
+  usecase "Gerer `pannes`" as UC_Pannes
+  usecase "Gerer `reparations`" as UC_Reparations
+  usecase "Gerer `interventions`" as UC_Interventions
+  usecase "Gerer `releves`" as UC_Releves
+  usecase "Exporter rapports PDF / Excel" as UC_Reports
+  usecase "Gerer `users` /\n`settings` /\n`logs` /\ntokens API" as UC_Admin
+}
+
+Directeur --> UC_Auth
+Directeur --> UC_Dashboard
+Directeur --> UC_ReadData
+Directeur --> UC_Notifications
+Directeur --> UC_Clients
+Directeur --> UC_Compteurs
+Directeur --> UC_Secteurs
+Directeur --> UC_Pannes
+Directeur --> UC_Reparations
+Directeur --> UC_Interventions
+Directeur --> UC_Releves
+Directeur --> UC_Reports
+Directeur --> UC_Admin
+
+Responsable --> UC_Auth
+Responsable --> UC_Dashboard
+Responsable --> UC_ReadData
+Responsable --> UC_Notifications
+Responsable --> UC_Clients
+Responsable --> UC_Compteurs
+Responsable --> UC_Secteurs
+Responsable --> UC_Pannes
+Responsable --> UC_Reparations
+Responsable --> UC_Interventions
+Responsable --> UC_Releves
+Responsable --> UC_Reports
+
+Manager --> UC_Auth
+Manager --> UC_Dashboard
+Manager --> UC_ReadData
+Manager --> UC_Notifications
+Manager --> UC_Compteurs
+Manager --> UC_Pannes
+Manager --> UC_Reparations
+Manager --> UC_Interventions
+Manager --> UC_Releves
+Manager --> UC_Reports
+
+Technician --> UC_Auth
+Technician --> UC_Dashboard
+Technician --> UC_ReadData
+Technician --> UC_Notifications
+Technician --> UC_Pannes
+Technician --> UC_Reparations
+Technician --> UC_Interventions
+Technician --> UC_Releves
+
+Viewer --> UC_Auth
+Viewer --> UC_Dashboard
+Viewer --> UC_ReadData
+Viewer --> UC_Notifications
+
+Developer --> UC_Auth
+Developer --> UC_Dashboard
+Developer --> UC_ReadData
+Developer --> UC_Notifications
+Developer --> UC_Clients
+Developer --> UC_Compteurs
+Developer --> UC_Secteurs
+Developer --> UC_Pannes
+Developer --> UC_Reparations
+Developer --> UC_Interventions
+Developer --> UC_Releves
+Developer --> UC_Reports
+
+note right of UC_Admin
+  Seulement `directeur`
+  dans les routes API.
+end note
+
+note bottom of UC_Reports
+  `viewer/reports` existe cote frontend
+  mais l'API `reports/*` est a confirmer
+  pour `viewer`.
+end note
+@enduml

@@ -4,6 +4,15 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
+const testAccounts = [
+  'ahmed.alaoui',
+  'yassine.tahiri',
+  'salma.idrissi',
+  'omar.benjelloun',
+];
+
+const sharedTestPassword = 'password';
+
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -69,43 +78,64 @@ export default function Login() {
           </div>
 
           <form onSubmit={submit} noValidate className="space-y-5">
-          {error && <div className="rounded-xl border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm font-medium text-[var(--srm-red)]">{error}</div>}
+            {error && <div className="rounded-xl border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm font-medium text-[var(--srm-red)]">{error}</div>}
 
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">{t('forms.emailOrIdentifier')}</label>
-            <input
-              name="identifiant"
-              value={form.identifiant}
-              onChange={(event) => setForm((current) => ({ ...current, identifiant: event.target.value }))}
-              autoComplete="username"
-                className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[var(--srm-green)] focus:bg-white focus:ring-2 focus:ring-[rgb(112_184_48_/_0.22)]"
-              placeholder={t('login.identifierPlaceholder')}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">{t('forms.password')}</label>
-            <div className="relative">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{t('forms.emailOrIdentifier')}</label>
               <input
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-                autoComplete="current-password"
-                className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 pr-12 text-sm font-medium text-slate-800 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[var(--srm-green)] focus:bg-white focus:ring-2 focus:ring-[rgb(112_184_48_/_0.22)]"
-                placeholder={t('login.passwordPlaceholder')}
+                name="identifiant"
+                value={form.identifiant}
+                onChange={(event) => setForm((current) => ({ ...current, identifiant: event.target.value }))}
+                autoComplete="username"
+                className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[var(--srm-green)] focus:bg-white focus:ring-2 focus:ring-[rgb(112_184_48_/_0.22)]"
+                placeholder={t('login.identifierPlaceholder')}
               />
-              <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition duration-300 hover:bg-[var(--srm-green-soft)] hover:text-[var(--srm-green)]" aria-label={t('buttons.togglePassword')}>
-                {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
-              </button>
             </div>
-          </div>
 
-          <button type="submit" disabled={loading} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--srm-green)_0%,#63a62b_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_28px_rgb(112_184_48_/_0.22)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgb(112_184_48_/_0.28)] active:scale-95 disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none">
-            <LogIn size={16} strokeWidth={1.5} />
-            {loading ? t('buttons.signingIn') : t('buttons.signIn')}
-          </button>
-        </form>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-slate-700">{t('forms.password')}</label>
+              <div className="relative">
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                  autoComplete="current-password"
+                  className="h-14 w-full rounded-xl border border-slate-200 bg-white px-4 pr-12 text-sm font-medium text-slate-800 outline-none transition duration-300 placeholder:text-slate-400 focus:border-[var(--srm-green)] focus:bg-white focus:ring-2 focus:ring-[rgb(112_184_48_/_0.22)]"
+                  placeholder={t('login.passwordPlaceholder')}
+                />
+                <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition duration-300 hover:bg-[var(--srm-green-soft)] hover:text-[var(--srm-green)]" aria-label={t('buttons.togglePassword')}>
+                  {showPassword ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" disabled={loading} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--srm-green)_0%,#63a62b_100%)] px-4 py-3 text-sm font-bold text-white shadow-[0_14px_28px_rgb(112_184_48_/_0.22)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgb(112_184_48_/_0.28)] active:scale-95 disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none">
+              <LogIn size={16} strokeWidth={1.5} />
+              {loading ? t('buttons.signingIn') : t('buttons.signIn')}
+            </button>
+          </form>
+
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+            <div className="mb-3">
+              <h2 className="text-sm font-bold tracking-tight text-slate-900">Comptes de test</h2>
+              <p className="mt-1 text-xs font-medium text-slate-500">Identifiants rapides pour les tests de connexion.</p>
+            </div>
+
+            <div className="mb-3 rounded-xl border border-[var(--srm-green)]/15 bg-white px-3 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--srm-green)]">Mot de passe commun</div>
+              <div className="mt-1 select-all font-mono text-sm font-semibold text-slate-900">{sharedTestPassword}</div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              {testAccounts.map((identifiant) => (
+                <div key={identifiant} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Identifiant</div>
+                  <div className="mt-1 select-all break-all font-mono text-sm font-medium text-slate-900">{identifiant}</div>
+                </div>
+              ))}
+            </div>
+          </section>
         </section>
       </div>
     </div>

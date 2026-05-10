@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860">
+  <defs>
+    <style>
+      .title{font:700 28px Arial, sans-serif;fill:#0f172a}
+      .sub{font:600 13px Arial, sans-serif;fill:#334155}
+      .label{font:600 16px Arial, sans-serif;fill:#0f172a}
+      .small{font:12px Arial, sans-serif;fill:#334155}
+      .use{font:600 14px Arial, sans-serif;fill:#0f172a}
+      .note{font:12px Arial, sans-serif;fill:#334155}
+      .assoc{stroke:#94a3b8;stroke-width:2;stroke-opacity:.7}
+      .uc{fill:#fff;stroke:#2563eb;stroke-width:2}
+      .boundary{fill:#eff6ff;stroke:#bfdbfe;stroke-width:2}
+      .note-box{fill:#f8fafc;stroke:#cbd5e1;stroke-width:1.5}
+    </style>
+  </defs>
+  <rect width="1400" height="860" fill="#ffffff"/>
+  <text x="700" y="38" text-anchor="middle" class="title">Diagramme de cas d'utilisation - code reel</text>
+  <text x="700" y="62" text-anchor="middle" class="sub">Vue de synthese. Le detail exact par ressource est precise dans les tableaux et dans le code PlantUML.</text>
+
+  <rect x="235" y="90" rx="24" ry="24" width="930" height="730" class="boundary"/>
+  <text x="700" y="122" text-anchor="middle" class="label">Systeme : RADEETA-Management-System</text>
+
+  <ellipse cx="420" cy="170" rx="120" ry="42" class="uc"/>
+  <text x="420" y="164" text-anchor="middle" class="use">Se connecter</text>
+  <text x="420" y="182" text-anchor="middle" class="use">Se deconnecter</text>
+
+  <ellipse cx="700" cy="170" rx="125" ry="42" class="uc"/>
+  <text x="700" y="176" text-anchor="middle" class="use">Consulter tableau de bord</text>
+
+  <ellipse cx="980" cy="170" rx="120" ry="42" class="uc"/>
+  <text x="980" y="176" text-anchor="middle" class="use">Consulter notifications</text>
+
+  <ellipse cx="420" cy="320" rx="130" ry="46" class="uc"/>
+  <text x="420" y="326" text-anchor="middle" class="use">Consulter donnees metier</text>
+
+  <ellipse cx="700" cy="320" rx="110" ry="40" class="uc"/>
+  <text x="700" y="326" text-anchor="middle" class="use">Gerer `clients`</text>
+
+  <ellipse cx="980" cy="320" rx="120" ry="40" class="uc"/>
+  <text x="980" y="326" text-anchor="middle" class="use">Gerer `compteurs`</text>
+
+  <ellipse cx="420" cy="470" rx="115" ry="40" class="uc"/>
+  <text x="420" y="476" text-anchor="middle" class="use">Gerer `secteurs`</text>
+
+  <ellipse cx="700" cy="470" rx="105" ry="40" class="uc"/>
+  <text x="700" y="476" text-anchor="middle" class="use">Gerer `pannes`</text>
+
+  <ellipse cx="980" cy="470" rx="125" ry="40" class="uc"/>
+  <text x="980" y="476" text-anchor="middle" class="use">Gerer `reparations`</text>
+
+  <ellipse cx="420" cy="620" rx="130" ry="40" class="uc"/>
+  <text x="420" y="626" text-anchor="middle" class="use">Gerer `interventions`</text>
+
+  <ellipse cx="700" cy="620" rx="110" ry="40" class="uc"/>
+  <text x="700" y="626" text-anchor="middle" class="use">Gerer `releves`</text>
+
+  <ellipse cx="980" cy="620" rx="130" ry="40" class="uc"/>
+  <text x="980" y="614" text-anchor="middle" class="use">Exporter rapports</text>
+  <text x="980" y="632" text-anchor="middle" class="use">PDF / Excel</text>
+
+  <ellipse cx="700" cy="750" rx="180" ry="52" class="uc"/>
+  <text x="700" y="738" text-anchor="middle" class="use">Gerer `users` / `settings`</text>
+  <text x="700" y="756" text-anchor="middle" class="use">`logs` / tokens API</text>
+
+  <!-- Left actors -->
+  <circle cx="95" cy="150" r="18" fill="none" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="168" x2="95" y2="218" stroke="#0f172a" stroke-width="2"/>
+  <line x1="70" y1="185" x2="120" y2="185" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="218" x2="75" y2="252" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="218" x2="115" y2="252" stroke="#0f172a" stroke-width="2"/>
+  <text x="95" y="280" text-anchor="middle" class="label">directeur</text>
+
+  <circle cx="95" cy="395" r="18" fill="none" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="413" x2="95" y2="463" stroke="#0f172a" stroke-width="2"/>
+  <line x1="70" y1="430" x2="120" y2="430" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="463" x2="75" y2="497" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="463" x2="115" y2="497" stroke="#0f172a" stroke-width="2"/>
+  <text x="95" y="525" text-anchor="middle" class="label">responsable</text>
+
+  <circle cx="95" cy="640" r="18" fill="none" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="658" x2="95" y2="708" stroke="#0f172a" stroke-width="2"/>
+  <line x1="70" y1="675" x2="120" y2="675" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="708" x2="75" y2="742" stroke="#0f172a" stroke-width="2"/>
+  <line x1="95" y1="708" x2="115" y2="742" stroke="#0f172a" stroke-width="2"/>
+  <text x="95" y="770" text-anchor="middle" class="label">developer</text>
+
+  <!-- Right actors -->
+  <circle cx="1305" cy="170" r="18" fill="none" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="188" x2="1305" y2="238" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1280" y1="205" x2="1330" y2="205" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="238" x2="1285" y2="272" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="238" x2="1325" y2="272" stroke="#0f172a" stroke-width="2"/>
+  <text x="1305" y="300" text-anchor="middle" class="label">manager</text>
+
+  <circle cx="1305" cy="400" r="18" fill="none" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="418" x2="1305" y2="468" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1280" y1="435" x2="1330" y2="435" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="468" x2="1285" y2="502" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="468" x2="1325" y2="502" stroke="#0f172a" stroke-width="2"/>
+  <text x="1305" y="530" text-anchor="middle" class="label">technician</text>
+
+  <circle cx="1305" cy="635" r="18" fill="none" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="653" x2="1305" y2="703" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1280" y1="670" x2="1330" y2="670" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="703" x2="1285" y2="737" stroke="#0f172a" stroke-width="2"/>
+  <line x1="1305" y1="703" x2="1325" y2="737" stroke="#0f172a" stroke-width="2"/>
+  <text x="1305" y="765" text-anchor="middle" class="label">viewer</text>
+
+  <!-- Associations -->
+  <line x1="130" y1="175" x2="300" y2="170" class="assoc"/>
+  <line x1="130" y1="175" x2="575" y2="170" class="assoc"/>
+  <line x1="130" y1="175" x2="860" y2="170" class="assoc"/>
+  <line x1="130" y1="190" x2="295" y2="320" class="assoc"/>
+  <line x1="130" y1="215" x2="590" y2="320" class="assoc"/>
+  <line x1="130" y1="230" x2="860" y2="320" class="assoc"/>
+  <line x1="130" y1="245" x2="305" y2="470" class="assoc"/>
+  <line x1="130" y1="255" x2="595" y2="470" class="assoc"/>
+  <line x1="130" y1="260" x2="855" y2="470" class="assoc"/>
+  <line x1="130" y1="265" x2="295" y2="620" class="assoc"/>
+  <line x1="130" y1="268" x2="590" y2="620" class="assoc"/>
+  <line x1="130" y1="270" x2="850" y2="620" class="assoc"/>
+  <line x1="130" y1="272" x2="520" y2="750" class="assoc"/>
+
+  <line x1="130" y1="420" x2="300" y2="170" class="assoc"/>
+  <line x1="130" y1="425" x2="575" y2="170" class="assoc"/>
+  <line x1="130" y1="430" x2="860" y2="170" class="assoc"/>
+  <line x1="130" y1="435" x2="295" y2="320" class="assoc"/>
+  <line x1="130" y1="445" x2="590" y2="320" class="assoc"/>
+  <line x1="130" y1="455" x2="860" y2="320" class="assoc"/>
+  <line x1="130" y1="465" x2="305" y2="470" class="assoc"/>
+  <line x1="130" y1="475" x2="595" y2="470" class="assoc"/>
+  <line x1="130" y1="485" x2="855" y2="470" class="assoc"/>
+  <line x1="130" y1="495" x2="295" y2="620" class="assoc"/>
+  <line x1="130" y1="505" x2="590" y2="620" class="assoc"/>
+  <line x1="130" y1="515" x2="850" y2="620" class="assoc"/>
+
+  <line x1="130" y1="665" x2="300" y2="170" class="assoc"/>
+  <line x1="130" y1="670" x2="575" y2="170" class="assoc"/>
+  <line x1="130" y1="675" x2="860" y2="170" class="assoc"/>
+  <line x1="130" y1="680" x2="295" y2="320" class="assoc"/>
+  <line x1="130" y1="685" x2="590" y2="320" class="assoc"/>
+  <line x1="130" y1="690" x2="860" y2="320" class="assoc"/>
+  <line x1="130" y1="695" x2="305" y2="470" class="assoc"/>
+  <line x1="130" y1="700" x2="595" y2="470" class="assoc"/>
+  <line x1="130" y1="705" x2="855" y2="470" class="assoc"/>
+  <line x1="130" y1="710" x2="295" y2="620" class="assoc"/>
+  <line x1="130" y1="715" x2="590" y2="620" class="assoc"/>
+  <line x1="130" y1="720" x2="850" y2="620" class="assoc"/>
+
+  <line x1="1280" y1="205" x2="540" y2="170" class="assoc"/>
+  <line x1="1280" y1="205" x2="825" y2="170" class="assoc"/>
+  <line x1="1280" y1="205" x2="1100" y2="170" class="assoc"/>
+  <line x1="1280" y1="215" x2="1100" y2="320" class="assoc"/>
+  <line x1="1280" y1="225" x2="805" y2="470" class="assoc"/>
+  <line x1="1280" y1="235" x2="1105" y2="470" class="assoc"/>
+  <line x1="1280" y1="245" x2="550" y2="620" class="assoc"/>
+  <line x1="1280" y1="255" x2="805" y2="620" class="assoc"/>
+  <line x1="1280" y1="265" x2="1100" y2="620" class="assoc"/>
+
+  <line x1="1280" y1="435" x2="540" y2="170" class="assoc"/>
+  <line x1="1280" y1="435" x2="825" y2="170" class="assoc"/>
+  <line x1="1280" y1="435" x2="1100" y2="170" class="assoc"/>
+  <line x1="1280" y1="440" x2="550" y2="320" class="assoc"/>
+  <line x1="1280" y1="445" x2="805" y2="470" class="assoc"/>
+  <line x1="1280" y1="450" x2="1105" y2="470" class="assoc"/>
+  <line x1="1280" y1="455" x2="550" y2="620" class="assoc"/>
+  <line x1="1280" y1="460" x2="805" y2="620" class="assoc"/>
+
+  <line x1="1280" y1="670" x2="540" y2="170" class="assoc"/>
+  <line x1="1280" y1="670" x2="825" y2="170" class="assoc"/>
+  <line x1="1280" y1="670" x2="1100" y2="170" class="assoc"/>
+  <line x1="1280" y1="675" x2="550" y2="320" class="assoc"/>
+
+  <rect x="1025" y="705" width="250" height="90" rx="12" ry="12" class="note-box"/>
+  <text x="1042" y="730" class="note">A confirmer :</text>
+  <text x="1042" y="750" class="note">le frontend declare `viewer/reports`,</text>
+  <text x="1042" y="768" class="note">mais `reports/*` est protege cote API</text>
+  <text x="1042" y="786" class="note">par `managerRoles`.</text>
+</svg>
