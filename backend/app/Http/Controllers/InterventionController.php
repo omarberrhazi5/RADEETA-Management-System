@@ -83,6 +83,7 @@ class InterventionController extends Controller
         $this->prepareTechnician($request, $validated);
         $this->hydrateFromPanne($validated);
         $this->authorizeTechnicianPanne($request, (int) ($validated['panne_id'] ?? $intervention->panne_id ?? 0));
+        $this->limitUpdatePayload($request, $validated);
 
         $previousStatus = $intervention->status;
         $intervention->update($validated);
@@ -98,6 +99,16 @@ class InterventionController extends Controller
         }
 
         return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter', 'technician')))->response();
+    }
+
+    public function destroy(Request $request, Intervention $intervention, InterventionPolicy $policy): JsonResponse
+    {
+        abort_unless($policy->delete($request->user(), $intervention), 403, 'Forbidden');
+
+        $intervention->delete();
+        ActivityLog::record('Intervention modifiée', 'Interventions', $request, ['intervention_id' => $intervention->id, 'deleted' => true]);
+
+        return response()->json(null, 204);
     }
 
     private function validated(Request $request, bool $creating = true): array
@@ -175,6 +186,20 @@ class InterventionController extends Controller
             403,
             'Technicians can only report interventions for assigned claims.'
         );
+    }
+
+    private function limitUpdatePayload(Request $request, array &$validated): void
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        if ($value === UserRole::Manager->value) {
+            $validated = array_intersect_key($validated, array_flip(['status', 'technician_id']));
+        }
+
+        if ($value === UserRole::Technician->value) {
+            $validated = array_intersect_key($validated, array_flip(['status', 'observations', 'materials_used', 'completed_at']));
+        }
     }
 
     private function hydrateFromPanne(array &$validated): void

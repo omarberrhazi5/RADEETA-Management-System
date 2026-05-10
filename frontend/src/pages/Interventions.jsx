@@ -30,8 +30,8 @@ import { ROLES, canCreate, canUpdate } from '../utils/rbac';
 
 const statusKeys = ['en_attente', 'en_cours', 'terminee', 'annulee'];
 const priorityKeys = ['low', 'normal', 'high', 'urgent'];
-const statusColors = { en_attente: 'amber', en_cours: 'blue', terminee: 'green', annulee: 'gray' };
-const priorityColors = { low: 'gray', normal: 'blue', high: 'amber', urgent: 'red' };
+const statusColors = { en_attente: 'amber', en_cours: 'green', terminee: 'green', annulee: 'gray' };
+const priorityColors = { low: 'gray', normal: 'green', high: 'amber', urgent: 'red' };
 
 function normalizeStatus(status) {
   if (status === 'echouee') return 'annulee';
@@ -76,10 +76,10 @@ function searchable(row) {
 
 function StatTile({ label, value, icon: Icon, color }) {
   const colors = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-100',
+    blue: 'bg-[var(--srm-green-soft)] text-[var(--srm-green)] border-green-100',
     amber: 'bg-amber-50 text-amber-700 border-amber-100',
-    green: 'bg-green-50 text-green-700 border-green-100',
-    red: 'bg-red-50 text-red-700 border-red-100',
+    green: 'bg-[var(--srm-green-soft)] text-[var(--srm-green)] border-green-100',
+    red: 'bg-[var(--srm-red-soft)] text-[var(--srm-red)] border-red-100',
     gray: 'bg-gray-50 text-gray-600 border-gray-100',
   };
 
@@ -127,6 +127,9 @@ export default function Interventions() {
   const [saving, setSaving] = useState(false);
   const pageSize = 10;
   const canWrite = canCreate(role, 'interventions') || canUpdate(role, 'interventions');
+  const managerEdit = formState?.mode === 'edit' && role === ROLES.MANAGER;
+  const technicianEdit = formState?.mode === 'edit' && role === ROLES.TECHNICIAN;
+  const fullEdit = !managerEdit && !technicianEdit;
 
   const stats = useMemo(() => ({
     water: items.filter((item) => item.service_type === 'water').length,
@@ -223,7 +226,13 @@ export default function Interventions() {
 
   function validate() {
     const next = {};
-    ['started_at', 'service_type', 'technician_id', 'panne_id', 'work_type', 'priority', 'status'].forEach((field) => {
+    const requiredFields = managerEdit
+      ? ['technician_id', 'status']
+      : technicianEdit
+        ? ['status']
+        : ['started_at', 'service_type', 'technician_id', 'panne_id', 'work_type', 'priority', 'status'];
+
+    requiredFields.forEach((field) => {
       if (!String(form[field] ?? '').trim()) next[field] = t('forms.required');
     });
     return next;
@@ -301,7 +310,7 @@ export default function Interventions() {
                 setPage(1);
               }}
               placeholder={t('common.searchPlaceholder')}
-              className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-72"
+              className="h-11 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 sm:w-72"
             />
           </div>
           <select
@@ -310,14 +319,14 @@ export default function Interventions() {
               setServiceFilter(event.target.value);
               setPage(1);
             }}
-            className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100"
           >
             <option value="">{t('buttons.filter')}</option>
             <option value="water">{t('services.water')}</option>
             <option value="electricity">{t('services.electricity')}</option>
           </select>
           {canCreate(role, 'interventions') && (
-            <Button variant="danger" className="bg-red-600 text-white hover:bg-red-700" onClick={() => openCreate()}>
+            <Button variant="primary" onClick={() => openCreate()}>
               <Plus size={16} />
               {t('interventions.new')}
             </Button>
@@ -360,7 +369,7 @@ export default function Interventions() {
               {loading ? <LoadingRows /> : pagedRows.map((row) => {
                 const status = normalizeStatus(row.status);
                 return (
-                  <tr key={row.id} className="transition hover:bg-blue-50/40">
+                  <tr key={row.id} className="transition duration-300 hover:bg-[var(--srm-green-soft)]">
                     <td className="whitespace-nowrap px-4 py-3">
                       <Badge label={t(`services.${row.service_type ?? 'water'}`)} color={row.service_type === 'electricity' ? 'amber' : 'blue'} />
                     </td>
@@ -377,7 +386,7 @@ export default function Interventions() {
                     {canWrite && (
                       <td className="px-4 py-3">
                         <div className="flex justify-end">
-                          <button type="button" onClick={() => openEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-blue-50 hover:text-blue-700" title={t('buttons.edit')}>
+                          <button type="button" onClick={() => openEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 transition duration-300 hover:bg-[var(--srm-green-soft)] hover:text-[var(--srm-green)]" title={t('buttons.edit')}>
                             <Pencil size={15} />
                           </button>
                         </div>
@@ -408,28 +417,30 @@ export default function Interventions() {
       {formState && (
         <Modal title={formState.mode === 'create' ? t('interventions.new') : t('buttons.edit')} onClose={() => setFormState(null)} maxWidth="max-w-4xl">
           <form onSubmit={submit} className="space-y-5">
-            {errors.general && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errors.general}</div>}
+            {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label={t('forms.interventionNumber')} name="intervention_number" value={form.intervention_number} disabled />
-              <Field label={t('forms.dateTime')} name="started_at" type="datetime-local" value={form.started_at} error={errors.started_at} onChange={update} required />
-              <Select label={t('forms.serviceType')} name="service_type" value={form.service_type} error={errors.service_type} onChange={update} options={[['water', t('services.water')], ['electricity', t('services.electricity')]]} required />
-              {role === ROLES.TECHNICIAN ? (
+              {fullEdit && <Field label={t('forms.dateTime')} name="started_at" type="datetime-local" value={form.started_at} error={errors.started_at} onChange={update} required />}
+              {fullEdit && <Select label={t('forms.serviceType')} name="service_type" value={form.service_type} error={errors.service_type} onChange={update} options={[['water', t('services.water')], ['electricity', t('services.electricity')]]} required />}
+              {technicianEdit ? (
                 <Field label={t('forms.technician')} name="technician_id" value={technicianName(user)} disabled />
-              ) : (
+              ) : (fullEdit || managerEdit) ? (
                 <Select label={t('forms.technician')} name="technician_id" value={form.technician_id} error={errors.technician_id} onChange={update} options={technicians.items.map((technician) => [technician.id, technicianName(technician)])} required />
-              )}
-              <Field label={t('forms.client')} name="client_id" value={form.client_id} error={errors.client_id} onChange={update} />
-              <Field label={t('forms.meter')} name="meter_id" value={form.meter_id} error={errors.meter_id} onChange={update} />
-              <Select label={t('forms.relatedPanne')} name="panne_id" value={form.panne_id} error={errors.panne_id} onChange={update} options={pannes.items.map((panne) => [panne.id_panne ?? panne.id, `#${panne.id_panne ?? panne.id} - ${translateAnomaly(t, panne.anomalie)}`])} required />
-              <Field label={t('forms.workType')} name="work_type" value={form.work_type} error={errors.work_type} onChange={update} required />
-              <Select label={t('forms.priority')} name="priority" value={form.priority} error={errors.priority} onChange={update} options={priorityKeys.map((key) => [key, t(`statuses.${key}`)])} required />
+              ) : null}
+              {fullEdit && <Field label={t('forms.client')} name="client_id" value={form.client_id} error={errors.client_id} onChange={update} />}
+              {fullEdit && <Field label={t('forms.meter')} name="meter_id" value={form.meter_id} error={errors.meter_id} onChange={update} />}
+              {fullEdit && <Select label={t('forms.relatedPanne')} name="panne_id" value={form.panne_id} error={errors.panne_id} onChange={update} options={pannes.items.map((panne) => [panne.id_panne ?? panne.id, `#${panne.id_panne ?? panne.id} - ${translateAnomaly(t, panne.anomalie)}`])} required />}
+              {fullEdit && <Field label={t('forms.workType')} name="work_type" value={form.work_type} error={errors.work_type} onChange={update} required />}
+              {fullEdit && <Select label={t('forms.priority')} name="priority" value={form.priority} error={errors.priority} onChange={update} options={priorityKeys.map((key) => [key, t(`statuses.${key}`)])} required />}
               <Select label={t('forms.status')} name="status" value={form.status} error={errors.status} onChange={update} options={statusKeys.map((key) => [key, t(`statuses.${key}`)])} required />
-              <Field label={t('forms.completedAt')} name="completed_at" type="datetime-local" value={form.completed_at} error={errors.completed_at} onChange={update} />
+              {(fullEdit || technicianEdit) && <Field label={t('forms.completedAt')} name="completed_at" type="datetime-local" value={form.completed_at} error={errors.completed_at} onChange={update} />}
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Textarea label={t('forms.materialsUsed')} name="materials_used" value={form.materials_used} error={errors.materials_used} onChange={update} />
-              <Textarea label={t('forms.observations')} name="observations" value={form.observations} error={errors.observations} onChange={update} />
-            </div>
+            {(fullEdit || technicianEdit) && (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Textarea label={t('forms.materialsUsed')} name="materials_used" value={form.materials_used} error={errors.materials_used} onChange={update} />
+                <Textarea label={t('forms.observations')} name="observations" value={form.observations} error={errors.observations} onChange={update} />
+              </div>
+            )}
             <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
               <Button variant="secondary" onClick={() => setFormState(null)}>{t('buttons.cancel')}</Button>
               <Button variant="primary" type="submit" loading={saving}>{formState.mode === 'create' ? t('buttons.create') : t('buttons.save')}</Button>
@@ -444,15 +455,15 @@ export default function Interventions() {
 function Field({ label, name, value, onChange, error, type = 'text', disabled = false, required = false }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-red-500"> *</span>}</span>
+      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
       <input
         type={type}
         value={value ?? ''}
         onChange={(event) => onChange?.(name, event.target.value)}
         disabled={disabled}
-        className={`h-11 w-full rounded-lg border px-3 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-500 ${error ? 'border-red-300' : 'border-gray-200'}`}
+        className={`h-11 w-full rounded-lg border px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:bg-gray-50 disabled:text-gray-500 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}
       />
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{error}</span>}
     </label>
   );
 }
@@ -462,16 +473,16 @@ function Select({ label, name, value, options, onChange, error, required = false
 
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-red-500"> *</span>}</span>
+      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
       <select
         value={value ?? ''}
         onChange={(event) => onChange(name, event.target.value)}
-        className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${error ? 'border-red-300' : 'border-gray-200'}`}
+        className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}
       >
         <option value="">{t('common.selectOption')}</option>
         {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
       </select>
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{error}</span>}
     </label>
   );
 }
@@ -484,9 +495,9 @@ function Textarea({ label, name, value, onChange, error }) {
         rows={4}
         value={value ?? ''}
         onChange={(event) => onChange(name, event.target.value)}
-        className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${error ? 'border-red-300' : 'border-gray-200'}`}
+        className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}
       />
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{error}</span>}
     </label>
   );
 }

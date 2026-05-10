@@ -31,17 +31,31 @@ class InterventionPolicy
         return in_array($this->role($user), [
             UserRole::Directeur->value,
             UserRole::Responsable->value,
-            UserRole::Manager->value,
-            UserRole::Technician->value,
             UserRole::Developer->value,
         ], true);
     }
 
     public function update(User $user, Intervention $intervention): bool
     {
-        return $this->role($user) !== UserRole::Technician->value
-            ? $this->create($user)
-            : (int) $intervention->technician_id === (int) $user->id;
+        if ($this->role($user) === UserRole::Technician->value) {
+            return (int) $intervention->technician_id === (int) $user->id;
+        }
+
+        return in_array($this->role($user), [
+            UserRole::Directeur->value,
+            UserRole::Responsable->value,
+            UserRole::Manager->value,
+            UserRole::Developer->value,
+        ], true);
+    }
+
+    public function delete(User $user, Intervention $intervention): bool
+    {
+        return in_array($this->role($user), [
+            UserRole::Directeur->value,
+            UserRole::Responsable->value,
+            UserRole::Developer->value,
+        ], true);
     }
 
     private function role(User $user): string

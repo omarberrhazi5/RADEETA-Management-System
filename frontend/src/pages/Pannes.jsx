@@ -25,7 +25,7 @@ export default function Pannes() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const { error, items, loading, refresh } = useResource(endpoints.pannes, { limit: 500, sort: 'recent' });
-  const secteurs = useResource(endpoints.secteurs, { limit: 500 });
+  const secteurs = useResource(endpoints.secteurs, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN });
   const technicians = useResource(endpoints.technicians, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN });
   const canCreateRepair = canCreate(role, 'reparations');
   const [formState, setFormState] = useState(null);
@@ -34,7 +34,7 @@ export default function Pannes() {
   const [filters, setFilters] = useState({ status: '', secteur: '', assigned: '' });
 
   const fields = useMemo(() => [
-    ...(role === ROLES.TECHNICIAN ? [] : [
+    ...([ROLES.TECHNICIAN, ROLES.MANAGER].includes(role) ? [] : [
       { name: 'id_compteur', label: t('forms.meterId'), type: 'number', required: true },
       { name: 'anomalie', label: t('forms.anomaly'), required: true },
       { name: 'date_panne', label: t('forms.faultDate'), type: 'date', required: true, defaultValue: new Date().toISOString().slice(0, 10) },
@@ -106,10 +106,12 @@ export default function Pannes() {
               <option value="open">{t('statuses.open')}</option>
               <option value="resolved">{t('statuses.resolved')}</option>
             </select>
-            <select value={filters.secteur} onChange={(event) => setFilters((current) => ({ ...current, secteur: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
-              <option value="">{t('common.allSectors')}</option>
-              {secteurs.items.map((secteur) => <option key={secteur.id} value={secteur.id}>{secteur.nom_secteur}</option>)}
-            </select>
+            {role !== ROLES.TECHNICIAN && (
+              <select value={filters.secteur} onChange={(event) => setFilters((current) => ({ ...current, secteur: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
+                <option value="">{t('common.allSectors')}</option>
+                {secteurs.items.map((secteur) => <option key={secteur.id} value={secteur.id}>{secteur.nom_secteur}</option>)}
+              </select>
+            )}
             {role !== ROLES.TECHNICIAN && (
               <select value={filters.assigned} onChange={(event) => setFilters((current) => ({ ...current, assigned: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
                 <option value="">{t('common.allTechnicians')}</option>

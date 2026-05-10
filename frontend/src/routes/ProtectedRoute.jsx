@@ -1,16 +1,16 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-import { hasRole, isKnownRole } from '../utils/rbac';
+import { hasPermission, hasRole, isDirecteur, isKnownRole, ROLES } from '../utils/rbac';
 
-export default function ProtectedRoute({ roles }) {
+export default function ProtectedRoute({ roles, permission }) {
   const { t } = useTranslation();
   const location = useLocation();
   const { booting, isAuthenticated, role } = useAuth();
 
   if (booting) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
+      <div className="srm-app flex min-h-screen items-center justify-center bg-slate-50 text-sm font-medium text-slate-500">
         {t('common.loadingSession')}
       </div>
     );
@@ -20,7 +20,15 @@ export default function ProtectedRoute({ roles }) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
+  if (roles?.includes(ROLES.DIRECTEUR) && roles.length === 1 && !isDirecteur(role)) {
+    return <Navigate to="/access-denied" replace />;
+  }
+
   if (roles && !hasRole(role, roles)) {
+    return <Navigate to="/access-denied" replace />;
+  }
+
+  if (permission && !hasPermission(role, permission)) {
     return <Navigate to="/access-denied" replace />;
   }
 

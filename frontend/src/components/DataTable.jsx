@@ -69,11 +69,11 @@ export default function DataTable({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+          <h2 className="text-xl font-bold tracking-tight text-slate-800">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm font-medium text-slate-500">{subtitle}</p>}
         </div>
         {showCreate && (
           <Button variant="primary" onClick={onCreate}>
@@ -83,10 +83,10 @@ export default function DataTable({
         )}
       </div>
 
-      <div className="sticky top-16 z-10 rounded-lg border border-gray-200 bg-white/95 p-3 shadow-sm backdrop-blur">
+      <div className="sticky top-16 z-10 rounded-2xl border border-white/80 bg-white/70 p-3 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] backdrop-blur-md">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative min-w-0 flex-1">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} strokeWidth={1.5} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
               onChange={(event) => {
@@ -94,13 +94,13 @@ export default function DataTable({
                 setPage(1);
               }}
               placeholder={t('common.searchPlaceholder')}
-              className="h-11 w-full rounded-md border border-gray-300 pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-9 pr-3 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:bg-white focus:ring-4 focus:ring-green-100"
             />
           </div>
           {filters && <div className="flex flex-wrap gap-2">{filters}</div>}
         </div>
         {(query || filters) && (
-          <div className="mt-2 text-xs text-gray-500">
+          <div className="mt-2 text-xs font-medium text-slate-500">
             {t('common.showing', { visible: visibleRows.length, total: rows.length })}
           </div>
         )}
@@ -111,45 +111,45 @@ export default function DataTable({
       ) : visibleRows.length === 0 ? (
         <EmptyState message={emptyMessage ?? t('common.emptyFiltered')} />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0_0_0_/_0.04)]">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-slate-50/80">
                 <tr>
                   {columns.map((column) => (
-                    <th key={column.key} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">
-                      <button type="button" onClick={() => toggleSort(column.key)} className="inline-flex items-center gap-1 hover:text-gray-900">
+                    <th key={column.key} className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                      <button type="button" onClick={() => toggleSort(column.key)} className="inline-flex items-center gap-1 transition duration-300 hover:text-slate-900">
                         {column.header}
                         {sort.key === column.key ? (sort.direction === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />) : null}
                       </button>
                     </th>
                   ))}
                   {showActions && (
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">
+                    <th className="px-5 py-4 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
                       {t('common.actions')}
                     </th>
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {pagedRows.map((row) => (
-                  <tr key={row.id ?? row.id_client ?? row.id_compteur ?? row.id_panne ?? row.id_reparation} className="transition hover:bg-blue-50/40">
+                  <tr key={row.id ?? row.id_client ?? row.id_compteur ?? row.id_panne ?? row.id_reparation} className="transition duration-300 hover:bg-[var(--srm-green-soft)]">
                     {columns.map((column) => (
-                      <td key={column.key} className="whitespace-nowrap px-4 py-3 text-gray-700">
+                      <td key={column.key} className="whitespace-nowrap px-5 py-4 text-slate-700">
                         {column.render ? column.render(row) : row[column.key] ?? '-'}
                       </td>
                     ))}
                     {showActions && (
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         <div className="flex justify-end gap-1">
                           {showEdit && (
-                            <button type="button" onClick={() => onEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-blue-50 hover:text-blue-700" title={t('buttons.edit')}>
-                              <Pencil size={15} />
+                            <button type="button" onClick={() => onEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition duration-300 hover:bg-[var(--srm-green-soft)] hover:text-[var(--srm-green)]" title={t('buttons.edit')}>
+                              <Pencil size={15} strokeWidth={1.5} />
                             </button>
                           )}
                           {showDelete && (
-                            <button type="button" onClick={() => onDelete(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 hover:bg-red-50 hover:text-red-700" title={t('buttons.delete')}>
-                              <Trash2 size={15} />
+                            <button type="button" onClick={() => onDelete(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition duration-300 hover:bg-[var(--srm-red-soft)] hover:text-[var(--srm-red)]" title={t('buttons.delete')}>
+                              <Trash2 size={15} strokeWidth={1.5} />
                             </button>
                           )}
                         </div>
@@ -160,7 +160,7 @@ export default function DataTable({
               </tbody>
             </table>
           </div>
-          <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm font-medium text-slate-600 sm:flex-row sm:items-center sm:justify-between">
             <div>
               {t('common.pageOf', { current: currentPage, total: totalPages })} - {t('common.records', { count: visibleRows.length })}
             </div>

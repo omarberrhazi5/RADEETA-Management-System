@@ -40,7 +40,7 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken($validated['device_name'] ?? 'api-token')->plainTextToken;
-        ActivityLog::record('Connexion utilisateur', 'Authentification', $request);
+        ActivityLog::record('Connexion utilisateur', 'Authentification', $request, ['actor_user_id' => $user->id]);
 
         return response()->json([
             'token' => $token,

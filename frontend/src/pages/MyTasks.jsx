@@ -39,46 +39,46 @@ export default function MyTasks() {
     <div className="space-y-5">
       {error && <ErrorState message={error} />}
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">{t('tasks.title')}</h1>
-        <p className="mt-1 text-sm text-gray-500">{t('tasks.subtitle')}</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-800">{t('tasks.title')}</h1>
+        <p className="mt-1 text-sm font-medium text-slate-500">{t('tasks.subtitle')}</p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="text-xs font-medium uppercase text-gray-500">{t('tasks.activeTasks')}</div>
-          <div className="mt-1 text-2xl font-semibold text-gray-900">{tasks.filter((task) => task.status === 'active').length}</div>
+        <div className="rounded-2xl bg-white p-5 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] transition duration-300 hover:scale-[1.02]">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{t('tasks.activeTasks')}</div>
+          <div className="mt-1 text-2xl font-bold text-slate-800">{tasks.filter((task) => task.status === 'active').length}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="text-xs font-medium uppercase text-gray-500">{t('tasks.highPriority')}</div>
-          <div className="mt-1 text-2xl font-semibold text-red-600">{tasks.filter((task) => task.priority === 'high').length}</div>
+        <div className="rounded-2xl bg-white p-5 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] transition duration-300 hover:scale-[1.02]">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{t('tasks.highPriority')}</div>
+          <div className="mt-1 text-2xl font-bold text-[var(--srm-red)]">{tasks.filter((task) => task.priority === 'high').length}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="text-xs font-medium uppercase text-gray-500">{t('tasks.completed')}</div>
-          <div className="mt-1 text-2xl font-semibold text-emerald-600">{tasks.filter((task) => task.status === 'completed').length}</div>
+        <div className="rounded-2xl bg-white p-5 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)] transition duration-300 hover:scale-[1.02]">
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{t('tasks.completed')}</div>
+          <div className="mt-1 text-2xl font-bold text-[var(--srm-green)]">{tasks.filter((task) => task.status === 'completed').length}</div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0_0_0_/_0.04)]">
         {tasks.length === 0 ? (
-          <div className="px-4 py-12 text-center text-sm text-gray-500">{t('tasks.none')}</div>
+          <div className="px-4 py-12 text-center text-sm font-medium text-slate-500">{t('tasks.none')}</div>
         ) : tasks.map((task) => {
           const Icon = task.icon;
           return (
-            <div key={task.id} className="grid gap-3 border-b border-gray-100 p-4 last:border-0 md:grid-cols-[auto_1fr_auto] md:items-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+            <div key={task.id} className="grid gap-3 border-b border-slate-100 p-4 transition duration-300 last:border-0 hover:bg-green-50/30 md:grid-cols-[auto_1fr_auto] md:items-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--srm-green-soft)] text-[var(--srm-green)]">
                 <Icon size={18} />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-semibold text-gray-900">{task.title}</h2>
+                  <h2 className="font-bold tracking-tight text-slate-800">{task.title}</h2>
                   <Badge label={task.type} color="blue" />
                   <Badge label={t(`statuses.${task.priority}`)} color={task.priority === 'high' ? 'red' : 'amber'} />
                   <Badge label={t(`statuses.${task.status}`)} color={task.status === 'completed' ? 'green' : 'amber'} />
                 </div>
-                <p className="mt-1 text-sm text-gray-600">{task.subtitle}</p>
-                <p className="mt-1 text-xs text-gray-500">{task.client} - {task.sector}</p>
+                <p className="mt-1 text-sm font-medium text-slate-600">{task.subtitle}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">{task.client} - {task.sector}</p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
                 {task.status === 'completed' ? <CheckCircle2 size={16} /> : <CalendarClock size={16} />}
                 {task.due || '-'}
               </div>

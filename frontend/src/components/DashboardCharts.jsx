@@ -29,7 +29,7 @@ function ChartSkeleton() {
       {Array.from({ length: 8 }).map((_, index) => (
         <div key={index} className="flex flex-1 flex-col justify-end">
           <div
-            className="animate-pulse rounded-t-md bg-gray-100"
+            className="animate-pulse rounded-t-md bg-slate-100"
             style={{ height: `${34 + ((index * 17) % 58)}%` }}
           />
         </div>
@@ -40,10 +40,10 @@ function ChartSkeleton() {
 
 function ChartCard({ title, subtitle, children, empty, loading = false }) {
   return (
-    <section className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <section className="min-w-0 rounded-2xl bg-white p-5 shadow-[0_8px_30px_rgb(0_0_0_/_0.04)]">
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-        {subtitle && <p className="mt-1 text-xs text-gray-500">{subtitle}</p>}
+        <h3 className="text-sm font-bold tracking-tight text-slate-800">{title}</h3>
+        {subtitle && <p className="mt-1 text-xs font-medium text-slate-500">{subtitle}</p>}
       </div>
       <div className="h-[300px] w-full min-w-0 overflow-hidden">
         {loading ? <ChartSkeleton /> : empty ? <EmptyState message={empty} /> : children}
@@ -63,8 +63,8 @@ function groupByMonth(rows, dateKey, fallback, locale, valueGetter = () => 1) {
 }
 
 const serviceColors = {
-  water: '#3b82f6',
-  electricity: '#f59e0b',
+  water: '#70b830',
+  electricity: '#c01818',
 };
 
 export default function DashboardCharts({ pannes = [], interventions = [], loading = false }) {
@@ -92,7 +92,7 @@ export default function DashboardCharts({ pannes = [], interventions = [], loadi
             <XAxis dataKey="sector" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" height={70} />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Bar dataKey="count" fill="#2563eb" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="count" fill="#70b830" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -104,7 +104,7 @@ export default function DashboardCharts({ pannes = [], interventions = [], loadi
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} />
             <Tooltip />
-            <Line type="monotone" dataKey="value" name={t('interventions.title')} stroke="#10b981" strokeWidth={3} dot={{ r: 3 }} />
+            <Line type="monotone" dataKey="value" name={t('interventions.title')} stroke="#70b830" strokeWidth={3} dot={{ r: 3, fill: '#c01818', stroke: '#ffffff', strokeWidth: 2 }} />
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>

@@ -4,6 +4,125 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --srm-green: #70b830;
+  --srm-green-dark: #4f8f21;
+  --srm-green-soft: #eef8e8;
+  --srm-red: #c01818;
+  --srm-red-dark: #981313;
+  --srm-red-soft: #fdeaea;
+  --srm-card-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
+}
+
+@layer base {
+  html {
+    font-family: Inter, Geist, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  body {
+    background: #f8fafc;
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition-duration: 300ms;
+  }
+}
+
+.srm-app :is(input:not([type="checkbox"]), select, textarea) {
+  min-height: 2.75rem;
+  border-radius: 0.875rem;
+  border-color: rgb(226 232 240);
+  background: rgb(248 250 252 / 0.78);
+  color: #1e293b;
+  transition: border-color 300ms ease, background-color 300ms ease, box-shadow 300ms ease;
+}
+
+.srm-app :is(input:not([type="checkbox"]), select, textarea):focus {
+  border-color: var(--srm-green);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgb(112 184 48 / 0.18);
+  outline: none;
+}
+
+.srm-app :is(h1, h2, h3) {
+  color: #1e293b;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.srm-app :is(p, label) {
+  color: #64748b;
+}
+
+.srm-app svg {
+  stroke-width: 1.5;
+}
+
+.srm-app a {
+  transition: color 300ms ease, background-color 300ms ease, transform 300ms ease;
+}
+
+.srm-app a:hover {
+  color: var(--srm-green);
+}
+
+.login-premium {
+  isolation: isolate;
+}
+
+.login-mesh {
+  background:
+    radial-gradient(circle at 18% 20%, rgb(112 184 48 / 0.11), transparent 30%),
+    radial-gradient(circle at 84% 18%, rgb(226 232 240 / 0.8), transparent 26%),
+    radial-gradient(circle at 58% 92%, rgb(224 242 254 / 0.75), transparent 34%),
+    linear-gradient(135deg, #f8fafc 0%, #f1f5f9 48%, #ffffff 100%);
+}
+
+.login-mesh::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, rgb(255 255 255 / 0.72), transparent 38%),
+    radial-gradient(circle at center, transparent 0%, rgb(255 255 255 / 0.48) 74%);
+}
+
+.login-card-entrance {
+  animation: login-card-enter 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.srm-app :is(section, article)[class*="bg-white"],
+.srm-app div[class*="bg-white"][class*="border"] {
+  border-color: rgb(255 255 255 / 0.8);
+  border-radius: 1rem;
+  box-shadow: var(--srm-card-shadow);
+}
+
+.srm-app table thead {
+  background: rgb(248 250 252 / 0.84);
+}
+
+.srm-app table th {
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.srm-app table tbody tr {
+  transition: background-color 300ms ease;
+}
+
+.srm-app table tbody tr:hover {
+  background: rgb(238 248 232 / 0.42);
+}
+
 .gis-marker {
   position: relative;
   width: 18px;
@@ -22,11 +141,11 @@
 }
 
 .gis-marker--green {
-  background: #2ece69;
+  background: var(--srm-green);
 }
 
 .gis-marker--red {
-  background: #df3c3c;
+  background: var(--srm-red);
 }
 
 .gis-marker--amber {
@@ -38,7 +157,7 @@
   position: absolute;
   inset: -8px;
   border-radius: inherit;
-  background: rgb(220 38 38 / 0.28);
+  background: rgb(215 25 32 / 0.28);
   animation: gis-pulse 1.6s ease-out infinite;
 }
 
@@ -272,7 +391,7 @@
 }
 
 .dashboard-chip.is-active {
-  border-color: #10b981;
+  border-color: #70b830;
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
   color: #065f46;
   box-shadow: 0 10px 18px rgb(16 185 129 / 0.16);
@@ -398,5 +517,17 @@
   100% {
     transform: scale(1.8);
     opacity: 0;
+  }
+}
+
+@keyframes login-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

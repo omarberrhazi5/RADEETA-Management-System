@@ -30,8 +30,11 @@ class ActivityLog extends Model
 
     public static function record(string $action, string $module, ?Request $request = null, array $metadata = []): void
     {
+        $actorUserId = $request?->user()?->id ?? $metadata['actor_user_id'] ?? null;
+        unset($metadata['actor_user_id']);
+
         self::create([
-            'user_id' => $request?->user()?->id,
+            'user_id' => $actorUserId,
             'action' => $action,
             'module' => $module,
             'ip_address' => $request?->ip(),

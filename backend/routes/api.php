@@ -24,51 +24,60 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::delete('auth/tokens', [AuthController::class, 'clearTokens'])->middleware('role:'.UserRole::Directeur->value);
 
-    $adminRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
-    $managerRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
-    $technicianRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
-    $viewerRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
-    $directeurRole = UserRole::Directeur->value;
+    $operationalWriteRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
+    $supervisionRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
+    $reportRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
+    $repairReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $interventionReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
+    $repairWriteRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
+    $fieldUpdateRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $businessReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Viewer->value, UserRole::Developer->value]);
+    $panneReadRoles = implode(',', [UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
+    $notificationRoles = implode(',', [UserRole::Responsable->value, UserRole::Developer->value]);
+    Route::get('dashboard/summary', [DashboardController::class, 'summary'])->middleware("role:{$supervisionRoles}");
+    Route::get('dashboard/stats', [DashboardController::class, 'summary'])->middleware("role:{$supervisionRoles}");
+    Route::middleware('directeur')->group(function (): void {
+        Route::get('settings', [SettingsController::class, 'show']);
+        Route::put('settings', [SettingsController::class, 'update']);
+        Route::get('logs', [ActivityLogController::class, 'index']);
+        Route::apiResource('users', UserController::class)->only(['index', 'store', 'update']);
+    });
 
-    Route::get('dashboard/summary', [DashboardController::class, 'summary'])->middleware("role:{$managerRoles}");
-    Route::get('dashboard/stats', [DashboardController::class, 'summary'])->middleware("role:{$managerRoles}");
-    Route::get('settings', [SettingsController::class, 'show'])->middleware("role:{$directeurRole}");
-    Route::put('settings', [SettingsController::class, 'update'])->middleware("role:{$directeurRole}");
-    Route::get('logs', [ActivityLogController::class, 'index'])->middleware("role:{$directeurRole}");
+    Route::get('notifications', [NotificationController::class, 'index'])->middleware("role:{$notificationRoles}");
+    Route::post('notifications/read', [NotificationController::class, 'markAsRead'])->middleware("role:{$notificationRoles}");
+    Route::put('notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->middleware("role:{$notificationRoles}");
 
-    Route::get('notifications', [NotificationController::class, 'index'])->middleware("role:{$viewerRoles}");
-    Route::post('notifications/read', [NotificationController::class, 'markAsRead'])->middleware("role:{$viewerRoles}");
-    Route::put('notifications/mark-as-read', [NotificationController::class, 'markAsRead'])->middleware("role:{$viewerRoles}");
+    Route::apiResource('clients', ClientController::class)->only(['index', 'show'])->middleware("role:{$businessReadRoles}");
+    Route::apiResource('compteurs', CompteurController::class)->only(['index', 'show'])->middleware("role:{$businessReadRoles}");
+    Route::apiResource('secteurs', SecteurController::class)->only(['index', 'show'])->middleware("role:{$businessReadRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['index', 'show'])->middleware("role:{$panneReadRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['index', 'show'])->middleware("role:{$repairReadRoles}");
+    Route::apiResource('interventions', InterventionController::class)->only(['index', 'show'])->middleware("role:{$interventionReadRoles}");
+    Route::apiResource('releves', ReleveController::class)->only(['index', 'show'])->parameters(['releves' => 'releve'])->middleware("role:{$businessReadRoles}");
 
-    Route::apiResource('clients', ClientController::class)->only(['index', 'show'])->middleware("role:{$viewerRoles}");
-    Route::apiResource('compteurs', CompteurController::class)->only(['index', 'show'])->middleware("role:{$viewerRoles}");
-    Route::apiResource('secteurs', SecteurController::class)->only(['index', 'show'])->middleware("role:{$viewerRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['index', 'show'])->middleware("role:{$viewerRoles}");
-    Route::apiResource('reparations', ReparationController::class)->only(['index', 'show'])->middleware("role:{$viewerRoles}");
-    Route::apiResource('interventions', InterventionController::class)->only(['index', 'show'])->middleware("role:{$viewerRoles}");
-    Route::apiResource('releves', ReleveController::class)->only(['index', 'show'])->parameters(['releves' => 'releve'])->middleware("role:{$viewerRoles}");
+    Route::get('reports/pannes/pdf', [ReportController::class, 'pannesPdf'])->middleware("role:{$reportRoles}");
+    Route::get('reports/clients/excel', [ReportController::class, 'clientsExcel'])->middleware("role:{$reportRoles}");
+    Route::get('reports/export', [ReportController::class, 'export'])->middleware("role:{$reportRoles}");
 
-    Route::get('reports/pannes/pdf', [ReportController::class, 'pannesPdf'])->middleware("role:{$managerRoles}");
-    Route::get('reports/clients/excel', [ReportController::class, 'clientsExcel'])->middleware("role:{$managerRoles}");
+    Route::apiResource('clients', ClientController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('compteurs', CompteurController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('secteurs', SecteurController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['update'])->middleware("role:{$fieldUpdateRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['store', 'update'])->middleware("role:{$repairWriteRoles}");
+    Route::apiResource('interventions', InterventionController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('interventions', InterventionController::class)->only(['update'])->middleware("role:{$fieldUpdateRoles}");
+    Route::apiResource('releves', ReleveController::class)->only(['store', 'update'])->parameters(['releves' => 'releve'])->middleware("role:{$operationalWriteRoles}");
 
-    Route::apiResource('clients', ClientController::class)->only(['store', 'update'])->middleware("role:{$adminRoles}");
-    Route::apiResource('compteurs', CompteurController::class)->only(['store', 'update'])->middleware("role:{$managerRoles}");
-    Route::apiResource('secteurs', SecteurController::class)->only(['store', 'update'])->middleware("role:{$adminRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['store'])->middleware("role:{$managerRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['update'])->middleware("role:{$technicianRoles}");
-    Route::apiResource('reparations', ReparationController::class)->only(['store', 'update'])->middleware("role:{$technicianRoles}");
-    Route::apiResource('interventions', InterventionController::class)->only(['store', 'update'])->middleware("role:{$technicianRoles}");
-    Route::apiResource('releves', ReleveController::class)->only(['store', 'update'])->parameters(['releves' => 'releve'])->middleware("role:{$technicianRoles}");
+    Route::apiResource('clients', ClientController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('compteurs', CompteurController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('secteurs', SecteurController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('interventions', InterventionController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
 
-    Route::apiResource('clients', ClientController::class)->only(['destroy'])->middleware("role:{$adminRoles}");
-    Route::apiResource('compteurs', CompteurController::class)->only(['destroy'])->middleware("role:{$adminRoles}");
-    Route::apiResource('secteurs', SecteurController::class)->only(['destroy'])->middleware("role:{$adminRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['destroy'])->middleware("role:{$adminRoles}");
-    Route::apiResource('reparations', ReparationController::class)->only(['destroy'])->middleware("role:{$adminRoles}");
+    Route::get('users/technicians', [UserController::class, 'technicians'])->middleware("role:{$supervisionRoles}");
+    Route::get('users/operators', [UserController::class, 'technicians'])->middleware("role:{$supervisionRoles}");
+    Route::get('plombiers', [UserController::class, 'technicians'])->middleware("role:{$supervisionRoles}");
 
-    Route::get('users/technicians', [UserController::class, 'technicians'])->middleware("role:{$managerRoles}");
-    Route::get('users/operators', [UserController::class, 'technicians'])->middleware("role:{$managerRoles}");
-    Route::get('plombiers', [UserController::class, 'technicians'])->middleware("role:{$managerRoles}");
-
-    Route::apiResource('users', UserController::class)->only(['index', 'store', 'update'])->middleware("role:{$directeurRole}");
 });

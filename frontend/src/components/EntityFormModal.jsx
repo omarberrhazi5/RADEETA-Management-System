@@ -82,16 +82,16 @@ export default function EntityFormModal({
     <Modal title={title} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
         {errors.general && (
-          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="rounded-xl border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm font-medium text-[var(--srm-red)]">
             {errors.general}
           </div>
         )}
 
         {fields.map((field) => (
           <div key={field.name}>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
               {field.label}
-              {field.required && <span className="text-red-500"> *</span>}
+              {field.required && <span className="text-[var(--srm-red)]"> *</span>}
             </label>
 
             {field.type === 'select' ? (
@@ -99,7 +99,7 @@ export default function EntityFormModal({
                 value={values[field.name] ?? ''}
                 onChange={(event) => update(field.name, event.target.value)}
                 disabled={field.disabled}
-                className={`w-full rounded-md border px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
+                className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors[field.name] ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
               >
                 <option value="">{field.placeholderKey ? t(field.placeholderKey) : field.placeholder ?? t('common.selectOption')}</option>
                 {field.options?.map((option) => (
@@ -113,7 +113,7 @@ export default function EntityFormModal({
                 onChange={(event) => update(field.name, event.target.value)}
                 placeholder={field.placeholderKey ? t(field.placeholderKey) : field.placeholder}
                 disabled={field.disabled}
-                className={`w-full rounded-md border px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
+                className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors[field.name] ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
               />
             ) : (
               <input
@@ -124,16 +124,16 @@ export default function EntityFormModal({
                 min={field.min}
                 step={field.step}
                 disabled={field.disabled}
-                className={`w-full rounded-md border px-3 py-2 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
+                className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors[field.name] ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
               />
             )}
 
-            {(field.help || field.helpKey) && <p className="mt-1 text-xs text-gray-500">{field.helpKey ? t(field.helpKey) : field.help}</p>}
-            {errors[field.name] && <p className="mt-1 text-xs text-red-600">{errors[field.name]}</p>}
+            {(field.help || field.helpKey) && <p className="mt-1 text-xs font-medium text-slate-500">{field.helpKey ? t(field.helpKey) : field.help}</p>}
+            {errors[field.name] && <p className="mt-1 text-xs font-medium text-[var(--srm-red)]">{errors[field.name]}</p>}
           </div>
         ))}
 
-        <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
+        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
           <Button variant="secondary" onClick={onClose}>{t('buttons.cancel')}</Button>
           <Button variant="primary" type="submit" loading={saving}>{submitLabel ?? t('buttons.save')}</Button>
         </div>

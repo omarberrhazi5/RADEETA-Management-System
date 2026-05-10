@@ -47,7 +47,7 @@ export default function PanneMap({ pannes = [], sectors = [], height = '420px', 
       .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm" style={{ height }}>
+    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0_0_0_/_0.04)]" style={{ height }}>
       {loading ? (
         <LoadingState label={t('map.loading')} />
       ) : sectorPoints.length === 0 ? (
@@ -74,7 +74,7 @@ export default function PanneMap({ pannes = [], sectors = [], height = '420px', 
                       <div><span className="font-semibold">{t('tables.anomaly')}:</span> {translateAnomaly(t, point.panne.anomalie)}</div>
                       <div><span className="font-semibold">{t('tables.technician')}:</span> {point.panne.assigned_technician || point.panne.assigned_operator ? `${(point.panne.assigned_technician ?? point.panne.assigned_operator).prenom ?? ''} ${(point.panne.assigned_technician ?? point.panne.assigned_operator).nom ?? ''}`.trim() : '-'}</div>
                       <Badge label={translateStatus(t, point.panne.statut ?? point.panne.status)} color="red" />
-                      <Link to="../pannes" className="block text-xs font-semibold text-blue-700 hover:underline">
+                      <Link to="../pannes" className="block text-xs font-semibold text-[var(--srm-green)] hover:underline">
                         {t('map.openPannesList')}
                       </Link>
                     </>

@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Compteur;
+use App\Models\Intervention;
 use App\Models\Panne;
 use App\Models\Releve;
 use App\Models\User;
@@ -41,7 +43,7 @@ class RbacApiTest extends TestCase
             ->assertJsonPath('data.0.id', $assignedPanne->id);
     }
 
-    public function test_operator_business_data_is_scoped_to_assigned_work(): void
+    public function test_technician_cannot_access_global_business_data(): void
     {
         $operator = User::factory()->create(['role' => UserRole::Technician]);
         $otherOperator = User::factory()->create(['role' => UserRole::Technician]);
@@ -70,42 +72,35 @@ class RbacApiTest extends TestCase
 
         Sanctum::actingAs($operator);
 
-        $this->getJson('/api/clients?limit=10')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $visibleCompteur->id_client);
-
+        $this->getJson('/api/clients?limit=10')->assertForbidden();
+        $this->getJson('/api/compteurs?limit=10')->assertForbidden();
+        $this->getJson('/api/secteurs?limit=10')->assertForbidden();
+        $this->getJson('/api/releves?limit=10')->assertForbidden();
         $this->getJson("/api/pannes/{$visiblePanne->id}")->assertOk();
         $this->getJson("/api/compteurs/{$hiddenCompteur->id}")->assertForbidden();
-        $this->getJson('/api/releves?limit=10')->assertOk();
     }
 
-    public function test_operator_can_create_reading_for_meter_in_assigned_task_sector_only(): void
+    public function test_technician_cannot_create_readings_or_repairs(): void
     {
         $operator = User::factory()->create(['role' => UserRole::Technician]);
         $assignedMeter = Compteur::factory()->create();
-        $sameSectorMeter = Compteur::factory()->create(['id_secteur' => $assignedMeter->id_secteur]);
-        $otherSectorMeter = Compteur::factory()->create();
-        Panne::factory()->create(['id_compteur' => $assignedMeter->id, 'assigned_to' => $operator->id]);
+        $assignedPanne = Panne::factory()->create(['id_compteur' => $assignedMeter->id, 'assigned_to' => $operator->id]);
 
         Sanctum::actingAs($operator);
 
         $this->postJson('/api/releves', [
-            'compteur_id' => $sameSectorMeter->id,
+            'compteur_id' => $assignedMeter->id,
             'ancien_index' => 10,
             'nouvel_index' => 18,
             'periode_debut' => now()->startOfMonth()->toDateString(),
             'periode_fin' => now()->endOfMonth()->toDateString(),
-        ])
-            ->assertCreated()
-            ->assertJsonPath('data.compteur_id', $sameSectorMeter->id);
+        ])->assertForbidden();
 
-        $this->postJson('/api/releves', [
-            'compteur_id' => $otherSectorMeter->id,
-            'ancien_index' => 10,
-            'nouvel_index' => 18,
-            'periode_debut' => now()->startOfMonth()->toDateString(),
-            'periode_fin' => now()->endOfMonth()->toDateString(),
+        $this->postJson('/api/reparations', [
+            'id_panne' => $assignedPanne->id,
+            'id_plombier' => $operator->id,
+            'date_reparation' => $assignedPanne->date_panne->toDateString(),
+            'description' => 'Technician should not create repairs.',
         ])->assertForbidden();
     }
 
@@ -114,6 +109,11 @@ class RbacApiTest extends TestCase
         Sanctum::actingAs(User::factory()->create(['role' => UserRole::Viewer]));
 
         $this->getJson('/api/clients')->assertOk();
+        $this->getJson('/api/compteurs')->assertOk();
+        $this->getJson('/api/secteurs')->assertOk();
+        $this->getJson('/api/pannes')->assertOk();
+        $this->getJson('/api/interventions')->assertOk();
+        $this->getJson('/api/reparations')->assertForbidden();
         $this->postJson('/api/clients', [
             'police' => 'POL-910001',
             'nom' => 'Viewer',
@@ -144,6 +144,42 @@ class RbacApiTest extends TestCase
 
         Sanctum::actingAs(User::factory()->create(['role' => UserRole::Responsable]));
         $this->getJson('/api/notifications')->assertOk();
+
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Manager]));
+        $this->getJson('/api/notifications')->assertForbidden();
+
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Technician]));
+        $this->getJson('/api/notifications')->assertForbidden();
+
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Viewer]));
+        $this->getJson('/api/notifications')->assertForbidden();
+    }
+
+    public function test_only_directeur_can_access_administration_endpoints(): void
+    {
+        ActivityLog::create([
+            'action' => 'Connexion utilisateur',
+            'module' => 'Administration',
+            'ip_address' => '127.0.0.1',
+        ]);
+
+        foreach ([UserRole::Responsable, UserRole::Manager, UserRole::Technician, UserRole::Viewer, UserRole::Developer] as $role) {
+            Sanctum::actingAs(User::factory()->create(['role' => $role]));
+
+            $this->getJson('/api/users')->assertForbidden();
+            $this->postJson('/api/users', $this->newUserPayload())->assertForbidden();
+            $this->getJson('/api/logs')->assertForbidden();
+            $this->getJson('/api/settings')->assertForbidden();
+            $this->putJson('/api/settings', $this->settingsPayload())->assertForbidden();
+        }
+
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Directeur]));
+
+        $this->getJson('/api/users')->assertOk();
+        $this->postJson('/api/users', $this->newUserPayload())->assertCreated();
+        $this->getJson('/api/logs')->assertOk();
+        $this->getJson('/api/settings')->assertOk();
+        $this->putJson('/api/settings', $this->settingsPayload())->assertOk();
     }
 
     public function test_directeur_and_responsable_can_create_repairs(): void
@@ -169,34 +205,155 @@ class RbacApiTest extends TestCase
         ])->assertCreated();
     }
 
-    public function test_technician_can_create_intervention_for_assigned_panne(): void
+    public function test_responsable_and_manager_can_access_reports(): void
     {
-        $technician = User::factory()->create(['role' => UserRole::Technician]);
-        $assignedPanne = Panne::factory()->create(['assigned_to' => $technician->id]);
-        $otherPanne = Panne::factory()->create();
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Responsable]));
 
-        Sanctum::actingAs($technician);
+        $this->getJson('/api/reports/export?type=monthly&format=pdf&content=anomalies&year=2026&month=5')
+            ->assertOk();
 
-        $this->postJson('/api/interventions', [
-            'panne_id' => $assignedPanne->id,
-            'technician_id' => $technician->id,
-            'intervention_at' => now()->format('Y-m-d H:i:s'),
-            'work_type' => 'repair',
-            'material_used' => "Joint\nCable",
-            'observations' => 'Technical report completed.',
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Manager]));
+
+        $this->getJson('/api/reports/export?type=monthly&format=pdf&content=anomalies&year=2026&month=5')
+            ->assertOk();
+
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Technician]));
+
+        $this->getJson('/api/reports/export?type=monthly&format=pdf&content=anomalies&year=2026&month=5')
+            ->assertForbidden();
+    }
+
+    public function test_manager_can_supervise_but_cannot_create_or_delete_operational_records(): void
+    {
+        $manager = User::factory()->create(['role' => UserRole::Manager]);
+        $operator = User::factory()->create(['role' => UserRole::Technician]);
+        $panne = Panne::factory()->create();
+        $intervention = Intervention::create([
+            'panne_id' => $panne->id,
+            'technician_id' => $operator->id,
+            'started_at' => now(),
+            'work_type' => 'inspection',
             'priority' => 'normal',
-            'status' => 'terminee',
-        ])->assertCreated()
-            ->assertJsonPath('data.panne_id', $assignedPanne->id)
-            ->assertJsonPath('data.status', 'terminee');
+            'status' => 'en_attente',
+        ]);
 
+        Sanctum::actingAs($manager);
+
+        $this->getJson('/api/reparations')->assertOk();
+        $this->getJson('/api/interventions')->assertOk();
+        $this->postJson('/api/pannes', [
+            'id_compteur' => Compteur::factory()->create()->id,
+            'date_panne' => now()->toDateString(),
+            'anomalie' => 'compteur_bloque',
+        ])->assertForbidden();
+        $this->postJson('/api/reparations', [
+            'id_panne' => $panne->id,
+            'id_plombier' => $operator->id,
+            'date_reparation' => $panne->date_panne->toDateString(),
+            'description' => 'Manager should not create repairs.',
+        ])->assertForbidden();
         $this->postJson('/api/interventions', [
-            'panne_id' => $otherPanne->id,
-            'technician_id' => $technician->id,
+            'panne_id' => $panne->id,
+            'technician_id' => $operator->id,
             'intervention_at' => now()->format('Y-m-d H:i:s'),
             'work_type' => 'inspection',
             'priority' => 'normal',
             'status' => 'en_cours',
         ])->assertForbidden();
+        $this->putJson("/api/interventions/{$intervention->id}", [
+            'status' => 'en_cours',
+            'work_type' => 'manager should not change this',
+        ])->assertOk();
+        $this->assertDatabaseHas('interventions', [
+            'id' => $intervention->id,
+            'status' => 'en_cours',
+            'work_type' => 'inspection',
+        ]);
+        $this->deleteJson("/api/interventions/{$intervention->id}")->assertForbidden();
+    }
+
+    public function test_technician_can_update_only_assigned_interventions(): void
+    {
+        $technician = User::factory()->create(['role' => UserRole::Technician]);
+        $assignedPanne = Panne::factory()->create(['assigned_to' => $technician->id]);
+        $otherPanne = Panne::factory()->create();
+        $assignedIntervention = Intervention::create([
+            'panne_id' => $assignedPanne->id,
+            'technician_id' => $technician->id,
+            'started_at' => now(),
+            'work_type' => 'repair',
+            'priority' => 'normal',
+            'status' => 'en_attente',
+        ]);
+        $otherIntervention = Intervention::create([
+            'panne_id' => $otherPanne->id,
+            'technician_id' => User::factory()->create(['role' => UserRole::Technician])->id,
+            'started_at' => now(),
+            'work_type' => 'inspection',
+            'priority' => 'normal',
+            'status' => 'en_attente',
+        ]);
+
+        Sanctum::actingAs($technician);
+
+        $this->getJson('/api/interventions')->assertOk()->assertJsonCount(1, 'data');
+        $this->postJson('/api/interventions', [
+            'panne_id' => $assignedPanne->id,
+            'technician_id' => $technician->id,
+            'intervention_at' => now()->format('Y-m-d H:i:s'),
+            'work_type' => 'repair',
+            'priority' => 'normal',
+            'status' => 'terminee',
+        ])->assertForbidden();
+
+        $this->putJson("/api/interventions/{$assignedIntervention->id}", [
+            'status' => 'terminee',
+            'material_used' => "Joint\nCable",
+            'observations' => 'Technical report completed.',
+            'work_type' => 'should be ignored',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'terminee');
+
+        $this->assertDatabaseHas('interventions', [
+            'id' => $assignedIntervention->id,
+            'status' => 'terminee',
+            'work_type' => 'repair',
+        ]);
+
+        $this->putJson("/api/interventions/{$otherIntervention->id}", [
+            'status' => 'en_cours',
+        ])->assertForbidden();
+    }
+
+    private function newUserPayload(): array
+    {
+        return [
+            'nom' => 'Controle',
+            'prenom' => 'Directeur',
+            'identifiant' => 'controle.directeur',
+            'email' => 'controle.directeur@srm-fm.ma',
+            'agence' => 'SRM-FM Taza',
+            'password' => 'password-secret',
+            'role' => UserRole::Viewer->value,
+        ];
+    }
+
+    private function settingsPayload(): array
+    {
+        return [
+            'agency_name' => 'SRM-FM Taza',
+            'application_name' => 'SRM-FM',
+            'default_language' => 'fr',
+            'notification_preferences' => [
+                'email' => true,
+                'in_app' => true,
+                'daily_digest' => false,
+            ],
+            'dashboard_preferences' => [
+                'show_maps' => true,
+                'show_charts' => true,
+                'compact_cards' => false,
+            ],
+        ];
     }
 }

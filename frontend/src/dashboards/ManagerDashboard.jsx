@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function ManagerDashboard() {
   const { t } = useTranslation();
-  const { interventions, stats, pannes, secteurs } = useDashboardData();
+  const { stats, pannes, secteurs } = useDashboardData({ includeInterventions: false });
 
   return (
     <DashboardFrame
@@ -11,11 +11,12 @@ export default function ManagerDashboard() {
       subtitle={t('dashboard.managerSubtitle')}
       stats={stats.data}
       pannes={pannes.items}
-      interventions={interventions.items}
+      interventions={[]}
       secteurs={secteurs.items}
-      loading={stats.loading || pannes.loading || secteurs.loading || interventions.loading}
-      error={stats.error || pannes.error || secteurs.error || interventions.error}
+      loading={stats.loading || pannes.loading || secteurs.loading}
+      error={stats.error || pannes.error || secteurs.error}
       mapTitle={t('dashboard.supervisionMap')}
+      showCharts={false}
     />
   );
 }

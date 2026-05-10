@@ -81,6 +81,8 @@ class PanneController extends Controller
 
         if ($this->isOperator($request)) {
             $validated = array_intersect_key($validated, array_flip(['status']));
+        } elseif ($this->isManager($request)) {
+            $validated = array_intersect_key($validated, array_flip(['status', 'assigned_to']));
         }
 
         $oldAssignedTo = $panne->assigned_to;
@@ -126,6 +128,14 @@ class PanneController extends Controller
         $value = $role instanceof UserRole ? $role->value : $role;
 
         return $value === UserRole::Technician->value;
+    }
+
+    private function isManager(Request $request): bool
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        return $value === UserRole::Manager->value;
     }
 
     private function authorizeOperatorPanneAccess(Request $request, Panne $panne): void

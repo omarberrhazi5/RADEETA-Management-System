@@ -54,10 +54,15 @@ export default function App() {
 
               <Route element={<ProtectedRoute roles={[ROLES.MANAGER]} />}>
                 <Route path="manager/dashboard" element={<ManagerDashboard />} />
+                <Route path="manager/clients" element={<Clients />} />
+                <Route path="manager/compteurs" element={<Compteurs />} />
+                <Route path="manager/secteurs" element={<Secteurs />} />
                 <Route path="manager/pannes" element={<Pannes />} />
                 <Route path="manager/repairs" element={<Reparations />} />
                 <Route path="manager/interventions" element={<Interventions />} />
-                <Route path="manager/reports" element={<Reports />} />
+                <Route element={<ProtectedRoute permission="reports" />}>
+                  <Route path="manager/reports" element={<Reports />} />
+                </Route>
               </Route>
 
               <Route element={<ProtectedRoute roles={[ROLES.TECHNICIAN]} />}>
@@ -78,9 +83,7 @@ export default function App() {
                 <Route path="viewer/compteurs" element={<Compteurs />} />
                 <Route path="viewer/secteurs" element={<Secteurs />} />
                 <Route path="viewer/pannes" element={<Pannes />} />
-                <Route path="viewer/repairs" element={<Reparations />} />
                 <Route path="viewer/interventions" element={<Interventions />} />
-                <Route path="viewer/reports" element={<Reports />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/access-denied" replace />} />

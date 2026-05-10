@@ -7,6 +7,7 @@ use App\Enums\PanneStatus;
 use App\Enums\UserRole;
 use App\Models\Client;
 use App\Models\Compteur;
+use App\Models\ActivityLog;
 use App\Models\Panne;
 use App\Models\Releve;
 use App\Models\Reparation;
@@ -29,6 +30,7 @@ class DatabaseSeeder extends Seeder
         $pannes = $this->seedPannes($compteurs, $users['operators']);
         $this->call(InterventionSeeder::class);
         $this->seedReparations($pannes, $users['operators']);
+        $this->seedActivityLogs($users);
         $this->seedNotifications($users, $pannes);
     }
 
@@ -225,5 +227,31 @@ class DatabaseSeeder extends Seeder
             $recipient = $recipients[$index % $recipients->count()];
             Notification::send($recipient, new UtilityNotification($event[0], $event[1], $event[2], ['seeded' => true]));
         });
+    }
+
+    private function seedActivityLogs(array $users): void
+    {
+        $actors = collect([$users['directeur'], $users['responsable'], $users['manager']])->merge($users['operators'])->values();
+        $rows = [
+            ['Connexion utilisateur', 'Authentification'],
+            ['Intervention assignée', 'Interventions'],
+            ['Intervention modifiée', 'Interventions'],
+            ['Status modifié', 'Interventions'],
+            ['Modification des paramètres', 'Paramètres'],
+            ['Utilisateur modifié', 'Administration'],
+        ];
+
+        collect($rows)->each(function (array $row, int $index) use ($actors): void {
+            ActivityLog::updateOrCreate([
+                'action' => $row[0],
+                'module' => $row[1],
+            ], [
+                'user_id' => $actors[$index % $actors->count()]->id,
+                'ip_address' => '127.0.0.1',
+                'metadata' => ['seeded' => true],
+            ]);
+        });
+
+        ActivityLog::whereNull('user_id')->update(['user_id' => $users['directeur']->id]);
     }
 }

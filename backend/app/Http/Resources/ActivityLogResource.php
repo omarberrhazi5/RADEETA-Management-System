@@ -9,10 +9,16 @@ class ActivityLogResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $displayName = $this->user
+            ? trim(($this->user->prenom ?? '').' '.($this->user->nom ?? '')) ?: ($this->user->name ?? $this->user->identifiant ?? 'System')
+            : 'System';
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'user' => new UserResource($this->whenLoaded('user')),
+            'user' => $displayName,
+            'user_name' => $displayName,
+            'user_details' => new UserResource($this->whenLoaded('user')),
             'action' => $this->action,
             'module' => $this->module,
             'ip_address' => $this->ip_address,

@@ -1,10 +1,10 @@
 import { Loader } from 'lucide-react';
 
 const variants = {
-  primary:  'bg-blue-600 hover:bg-blue-700 text-white border-blue-600',
-  secondary:'bg-white hover:bg-gray-50 text-gray-700 border-gray-200',
-  danger:   'bg-red-50 hover:bg-red-100 text-red-600 border-red-100',
-  success:  'bg-green-50 hover:bg-green-100 text-green-600 border-green-100',
+  primary:  'border-[var(--srm-green)] bg-[var(--srm-green)] text-white shadow-[0_10px_24px_rgb(112_184_48_/_0.18)] hover:bg-[var(--srm-green-dark)]',
+  secondary:'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+  danger:   'border-[var(--srm-red)] bg-[var(--srm-red-soft)] text-[var(--srm-red)] hover:bg-[var(--srm-red-soft)]',
+  success:  'border-[var(--srm-green)] bg-[var(--srm-green-soft)] text-[var(--srm-green)] hover:bg-[var(--srm-green-soft)]',
 };
 
 export default function Button({
@@ -21,9 +21,9 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-xs font-semibold transition duration-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 ${variants[variant]} ${className}`}
     >
-      {loading && <Loader size={12} className="animate-spin" />}
+      {loading && <Loader size={12} strokeWidth={1.5} className="animate-spin" />}
       {children}
     </button>
   );

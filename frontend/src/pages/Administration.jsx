@@ -39,7 +39,7 @@ const tabs = [
 const managedRoles = [ROLES.DIRECTEUR, ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER];
 const roleColors = {
   [ROLES.DIRECTEUR]: 'purple',
-  [ROLES.RESPONSABLE]: 'blue',
+  [ROLES.RESPONSABLE]: 'green',
   [ROLES.MANAGER]: 'indigo',
   [ROLES.TECHNICIAN]: 'green',
   [ROLES.VIEWER]: 'gray',
@@ -47,23 +47,29 @@ const roleColors = {
 const modules = ['Administration', 'Clients', 'Compteurs', 'Secteurs', 'Anomalies', 'Reparations', 'Interventions', 'Dashboard', 'Reports'];
 const permissions = {
   [ROLES.DIRECTEUR]: modules,
-  [ROLES.RESPONSABLE]: modules,
-  [ROLES.MANAGER]: ['Compteurs', 'Anomalies', 'Reparations', 'Interventions', 'Dashboard', 'Reports'],
+  [ROLES.RESPONSABLE]: ['Clients', 'Compteurs', 'Secteurs', 'Anomalies', 'Reparations', 'Interventions', 'Dashboard'],
+  [ROLES.MANAGER]: ['Clients', 'Compteurs', 'Secteurs', 'Anomalies', 'Dashboard', 'Reports'],
   [ROLES.TECHNICIAN]: ['Anomalies', 'Reparations', 'Interventions', 'Dashboard'],
-  [ROLES.VIEWER]: ['Clients', 'Anomalies', 'Interventions', 'Dashboard', 'Reports'],
+  [ROLES.VIEWER]: ['Clients', 'Compteurs', 'Dashboard'],
 };
 const actionColors = {
   'Nouvel utilisateur créé': 'green',
-  'Connexion utilisateur': 'blue',
+  'Connexion utilisateur': 'green',
   'Status modifié': 'amber',
   'Modification des paramètres': 'purple',
-  'Intervention assignée': 'blue',
+  'Intervention assignée': 'green',
   'Intervention modifiée': 'amber',
   'Utilisateur modifié': 'amber',
 };
 
 function userName(user) {
+  if (typeof user === 'string') return user;
   return `${user?.prenom ?? ''} ${user?.nom ?? ''}`.trim() || user?.identifiant || '-';
+}
+
+function activityUserName(t, log) {
+  const name = log.user_name || userName(log.user_details ?? log.user);
+  return name === 'System' ? t('common.system') : name;
 }
 
 function sortable(row, key) {
@@ -98,7 +104,7 @@ export default function Administration() {
   return (
     <div className="space-y-6">
       {toast && (
-        <div className={`fixed right-5 top-5 z-50 rounded-xl border px-4 py-3 text-sm shadow-lg ${toast.type === 'success' ? 'border-green-100 bg-green-50 text-green-700' : 'border-red-100 bg-red-50 text-red-700'}`}>
+        <div className={`fixed right-5 top-5 z-50 rounded-xl border px-4 py-3 text-sm shadow-lg ${toast.type === 'success' ? 'border-green-100 bg-[var(--srm-green-soft)] text-[var(--srm-green)]' : 'border-red-100 bg-[var(--srm-red-soft)] text-[var(--srm-red)]'}`}>
           {toast.message}
         </div>
       )}
@@ -118,7 +124,7 @@ export default function Administration() {
               key={key}
               type="button"
               onClick={() => setActiveTab(key)}
-              className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition ${activeTab === key ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
+              className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border-l-4 px-3 text-sm font-semibold transition duration-300 ${activeTab === key ? 'border-l-[var(--srm-green)] bg-[var(--srm-green-soft)] text-[var(--srm-green)] shadow-sm' : 'border-l-transparent text-gray-600 hover:bg-[var(--srm-green-soft)] hover:text-[var(--srm-green)]'}`}
             >
               <Icon size={16} />
               {t(labelKey)}
@@ -183,9 +189,9 @@ function UsersTab({ users, notify }) {
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={t('forms.searchPlaceholder')} className="h-11 rounded-lg border border-gray-200 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+            <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={t('forms.searchPlaceholder')} className="h-11 rounded-lg border border-gray-200 pl-9 pr-3 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100" />
           </div>
-          <select value={roleFilter} onChange={(event) => { setRoleFilter(event.target.value); setPage(1); }} className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+          <select value={roleFilter} onChange={(event) => { setRoleFilter(event.target.value); setPage(1); }} className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100">
             <option value="">{t('common.allRoles')}</option>
             {managedRoles.map((value) => <option key={value} value={value}>{translateRole(t, value)}</option>)}
           </select>
@@ -209,7 +215,7 @@ function UsersTab({ users, notify }) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {users.loading ? <SkeletonRows /> : pagedRows.map((user) => (
-              <tr key={user.id} className="transition hover:bg-blue-50/40">
+              <tr key={user.id} className="transition duration-300 hover:bg-[var(--srm-green-soft)]">
                 <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{user.identifiant}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{user.nom ?? '-'}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{user.prenom ?? '-'}</td>
@@ -273,7 +279,7 @@ function UserModal({ onClose, onCreated, notify }) {
   return (
     <Modal title={t('buttons.create')} onClose={onClose} maxWidth="max-w-2xl">
       <form onSubmit={submit} className="space-y-4">
-        {errors.general && <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{errors.general}</div>}
+        {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label={t('forms.identifier')} name="identifiant" value={values.identifiant} error={errors.identifiant} onChange={update} required />
           <Field label={t('forms.firstName')} name="prenom" value={values.prenom} error={errors.prenom} onChange={update} />
@@ -308,7 +314,7 @@ function RolesTab() {
               return (
                 <div key={module} className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 text-sm">
                   <span className="text-gray-700">{translateModule(t, module)}</span>
-                  <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${allowed ? 'bg-green-50 text-green-600' : 'bg-gray-50 text-gray-300'}`}>
+                  <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${allowed ? 'bg-[var(--srm-green-soft)] text-[var(--srm-green)]' : 'bg-gray-50 text-gray-300'}`}>
                     {allowed ? <Check size={14} /> : <X size={14} />}
                   </span>
                 </div>
@@ -372,7 +378,7 @@ function SettingsTab({ notify }) {
     <form onSubmit={save} className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm xl:col-span-2">
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900"><SlidersHorizontal size={17} />{t('administration.generalSettings')}</div>
-        {errors.general && <div className="mb-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{errors.general}</div>}
+        {errors.general && <div className="mb-3 rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label={t('forms.agencyName')} name="agency_name" value={values.agency_name} onChange={update} error={errors.agency_name} />
           <Field label={t('forms.applicationName')} name="application_name" value={values.application_name} onChange={update} error={errors.application_name} />
@@ -404,8 +410,8 @@ function LogsTab({ logs }) {
     const search = query.trim().toLowerCase();
     return logs.items
       .filter((log) => !moduleFilter || log.module === moduleFilter)
-      .filter((log) => !search || [userName(log.user), log.action, log.module, log.ip_address].join(' ').toLowerCase().includes(search));
-  }, [logs.items, moduleFilter, query]);
+      .filter((log) => !search || [activityUserName(t, log), log.action, log.module, log.ip_address].join(' ').toLowerCase().includes(search));
+  }, [logs.items, moduleFilter, query, t]);
   const modulesList = [...new Set(logs.items.map((log) => log.module).filter(Boolean))];
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -422,9 +428,9 @@ function LogsTab({ logs }) {
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={t('forms.searchPlaceholder')} className="h-11 rounded-lg border border-gray-200 pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+            <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder={t('forms.searchPlaceholder')} className="h-11 rounded-lg border border-gray-200 pl-9 pr-3 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100" />
           </div>
-          <select value={moduleFilter} onChange={(event) => { setModuleFilter(event.target.value); setPage(1); }} className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+          <select value={moduleFilter} onChange={(event) => { setModuleFilter(event.target.value); setPage(1); }} className="h-11 rounded-lg border border-gray-200 bg-white px-3 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100">
             <option value="">{t('common.allModules')}</option>
             {modulesList.map((module) => <option key={module} value={module}>{translateModule(t, module)}</option>)}
           </select>
@@ -439,8 +445,8 @@ function LogsTab({ logs }) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {logs.loading ? <SkeletonRows columns={5} /> : pagedRows.map((log) => (
-              <tr key={log.id} className="transition hover:bg-blue-50/40">
-                <td className="whitespace-nowrap px-4 py-3 text-gray-700">{userName(log.user)}</td>
+              <tr key={log.id} className="transition duration-300 hover:bg-[var(--srm-green-soft)]">
+                <td className="whitespace-nowrap px-4 py-3 text-gray-700">{activityUserName(t, log)}</td>
                 <td className="whitespace-nowrap px-4 py-3"><Badge label={translateActivityAction(t, log.action)} color={actionColors[log.action] ?? 'gray'} /></td>
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{translateModule(t, log.module)}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{log.created_at?.replace('T', ' ') ?? '-'}</td>
@@ -472,9 +478,9 @@ function Pagination({ currentPage, totalPages, onPage }) {
 function Field({ label, name, value, onChange, error, type = 'text', required = false }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-red-500"> *</span>}</span>
-      <input type={type} value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border px-3 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${error ? 'border-red-300' : 'border-gray-200'}`} />
-      {error && <span className="mt-1 block text-xs text-red-600">{Array.isArray(error) ? error[0] : error}</span>}
+      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
+      <input type={type} value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`} />
+      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{Array.isArray(error) ? error[0] : error}</span>}
     </label>
   );
 }
@@ -482,11 +488,11 @@ function Field({ label, name, value, onChange, error, type = 'text', required = 
 function Select({ label, name, value, options, onChange, error, required = false }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-red-500"> *</span>}</span>
-      <select value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${error ? 'border-red-300' : 'border-gray-200'}`}>
+      <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
+      <select value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}>
         {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
       </select>
-      {error && <span className="mt-1 block text-xs text-red-600">{Array.isArray(error) ? error[0] : error}</span>}
+      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{Array.isArray(error) ? error[0] : error}</span>}
     </label>
   );
 }
@@ -495,7 +501,7 @@ function Toggle({ label, checked, onChange }) {
   return (
     <label className="flex items-center justify-between gap-4 rounded-lg px-1 py-2 text-sm text-gray-700">
       {label}
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-gray-300 accent-[var(--srm-green)] focus:ring-[var(--srm-green)]" />
     </label>
   );
 }
