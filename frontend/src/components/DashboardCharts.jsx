@@ -63,13 +63,8 @@ function groupByMonth(rows, dateKey, fallback, locale, valueGetter = () => 1) {
 }
 
 const serviceColors = {
-<<<<<<< HEAD
   water: '#70b830',
   electricity: '#c01818',
-=======
-  water: '#092e69',
-  electricity: '#f59e0b',
->>>>>>> b16ed97 (Ajout des comptes de demonstration dans la page login)
 };
 
 export default function DashboardCharts({ pannes = [], interventions = [], loading = false }) {

@@ -4,15 +4,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
-const testAccounts = [
-  'ahmed.alaoui',
-  'yassine.tahiri',
-  'salma.idrissi',
-  'omar.benjelloun',
-];
-
-const sharedTestPassword = 'password';
-
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -115,27 +106,6 @@ export default function Login() {
               {loading ? t('buttons.signingIn') : t('buttons.signIn')}
             </button>
           </form>
-
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-            <div className="mb-3">
-              <h2 className="text-sm font-bold tracking-tight text-slate-900">Comptes de test</h2>
-              <p className="mt-1 text-xs font-medium text-slate-500">Identifiants rapides pour les tests de connexion.</p>
-            </div>
-
-            <div className="mb-3 rounded-xl border border-[var(--srm-green)]/15 bg-white px-3 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--srm-green)]">Mot de passe commun</div>
-              <div className="mt-1 select-all font-mono text-sm font-semibold text-slate-900">{sharedTestPassword}</div>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-2">
-              {testAccounts.map((identifiant) => (
-                <div key={identifiant} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Identifiant</div>
-                  <div className="mt-1 select-all break-all font-mono text-sm font-medium text-slate-900">{identifiant}</div>
-                </div>
-              ))}
-            </div>
-          </section>
         </section>
       </div>
     </div>

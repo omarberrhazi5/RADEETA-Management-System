@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "@resvg/resvg-js": "^2.6.2",
-    "docx": "^9.6.1",
-    "pdf-parse": "^2.4.5",
-    "pdfjs-dist": "^5.7.284"
-  }
-}
