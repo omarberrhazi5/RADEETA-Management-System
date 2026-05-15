@@ -21,10 +21,10 @@ export const MODULE_PERMISSIONS = {
   clients: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.VIEWER],
   compteurs: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.VIEWER],
   secteurs: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.VIEWER],
-  anomalies: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER, ROLES.DEVELOPER],
-  reparations: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN],
+  anomalies: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.VIEWER, ROLES.DEVELOPER],
+  reparations: [ROLES.RESPONSABLE, ROLES.MANAGER],
   interventions: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER],
-  dashboard: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER, ROLES.DEVELOPER],
+  dashboard: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.VIEWER, ROLES.DEVELOPER],
   reports: [ROLES.RESPONSABLE, ROLES.MANAGER],
   notifications: [ROLES.RESPONSABLE, ROLES.MANAGER, ROLES.TECHNICIAN, ROLES.VIEWER, ROLES.DEVELOPER],
 };
@@ -76,7 +76,7 @@ export function canCreate(role, resource) {
 
 export function canUpdate(role, resource) {
   if (role === ROLES.TECHNICIAN) {
-    return ['pannes', 'reparations', 'interventions'].includes(resource);
+    return ['pannes', 'interventions'].includes(resource);
   }
 
   if (role === ROLES.MANAGER) {
@@ -100,7 +100,7 @@ export function dashboardPathFor(role) {
   if (role === ROLES.DIRECTEUR) return '/administration';
   if (role === ROLES.RESPONSABLE) return '/admin/dashboard';
   if (role === ROLES.MANAGER) return '/manager/dashboard';
-  if (role === ROLES.TECHNICIAN) return '/technician/dashboard';
+  if (role === ROLES.TECHNICIAN) return '/technician/tasks';
   if (role === ROLES.VIEWER) return '/viewer/dashboard';
   if (role === ROLES.DEVELOPER && !prod) return '/admin/dashboard';
   return '/access-denied';

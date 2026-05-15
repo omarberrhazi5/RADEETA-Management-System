@@ -21,7 +21,8 @@ class ReparationController extends Controller
     {
         $limit = min((int) request('limit', 10), 500);
 
-        $query = Reparation::with('panne.compteur.client', 'panne.compteur.secteur', 'plombier');
+        $query = Reparation::with('panne.compteur.client', 'panne.compteur.secteur', 'plombier')
+            ->latest();
 
         if (OperatorAccess::isOperator($request->user())) {
             OperatorAccess::scopeReparations($query, $request->user());

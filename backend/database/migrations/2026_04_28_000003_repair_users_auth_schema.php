@@ -56,10 +56,10 @@ return new class extends Migration
 
         if (DB::table('users')->count() === 0) {
             DB::table('users')->insert([
-                'nom' => 'Responsable',
-                'prenom' => 'Default',
-                'identifiant' => 'admin',
-                'name' => 'Default Admin',
+                'nom' => 'Hammoch',
+                'prenom' => 'Nabil',
+                'identifiant' => 'nabil.hammoch',
+                'name' => 'Nabil Hammoch',
                 'email' => 'admin@example.com',
                 'password' => Hash::make('password'),
                 'role' => 'responsable',

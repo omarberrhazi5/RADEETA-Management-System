@@ -35,6 +35,7 @@ const priorityColors = { low: 'gray', normal: 'green', high: 'amber', urgent: 'r
 
 function normalizeStatus(status) {
   if (status === 'echouee') return 'annulee';
+  if (status === 'open') return 'en_attente';
   return status || 'en_attente';
 }
 
@@ -125,6 +126,7 @@ export default function Interventions() {
   const [form, setForm] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
   const pageSize = 10;
   const canWrite = canCreate(role, 'interventions') || canUpdate(role, 'interventions');
   const managerEdit = formState?.mode === 'edit' && role === ROLES.MANAGER;
@@ -267,6 +269,10 @@ export default function Interventions() {
         await api.post('/interventions', payload);
       } else {
         await api.put(`/interventions/${formState.item.id}`, payload);
+        if (role === ROLES.TECHNICIAN && payload.status === 'terminee') {
+          setToast('Intervention terminée et enregistrée dans les réparations');
+          window.setTimeout(() => setToast(null), 3500);
+        }
       }
       setFormState(null);
       refresh();
@@ -293,6 +299,11 @@ export default function Interventions() {
 
   return (
     <div className="space-y-6">
+      {toast && (
+        <div className="fixed right-5 top-5 z-50 rounded-xl border border-green-100 bg-[var(--srm-green-soft)] px-4 py-3 text-sm font-semibold text-[var(--srm-green)] shadow-lg">
+          {toast}
+        </div>
+      )}
       {error && <ErrorState message={error} />}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -429,7 +440,7 @@ export default function Interventions() {
               ) : null}
               {fullEdit && <Field label={t('forms.client')} name="client_id" value={form.client_id} error={errors.client_id} onChange={update} />}
               {fullEdit && <Field label={t('forms.meter')} name="meter_id" value={form.meter_id} error={errors.meter_id} onChange={update} />}
-              {fullEdit && <Select label={t('forms.relatedPanne')} name="panne_id" value={form.panne_id} error={errors.panne_id} onChange={update} options={pannes.items.map((panne) => [panne.id_panne ?? panne.id, `#${panne.id_panne ?? panne.id} - ${translateAnomaly(t, panne.anomalie)}`])} required />}
+              {fullEdit && <Select label={t('forms.relatedPanne')} name="panne_id" value={form.panne_id} error={errors.panne_id} onChange={update} options={pannes.items.map((panne) => [panne.id_panne ?? panne.id, `${translateAnomaly(t, panne.anomalie)} - ${panne.compteur?.cadran ?? t('tables.meter')}`])} required />}
               {fullEdit && <Field label={t('forms.workType')} name="work_type" value={form.work_type} error={errors.work_type} onChange={update} required />}
               {fullEdit && <Select label={t('forms.priority')} name="priority" value={form.priority} error={errors.priority} onChange={update} options={priorityKeys.map((key) => [key, t(`statuses.${key}`)])} required />}
               <Select label={t('forms.status')} name="status" value={form.status} error={errors.status} onChange={update} options={statusKeys.map((key) => [key, t(`statuses.${key}`)])} required />

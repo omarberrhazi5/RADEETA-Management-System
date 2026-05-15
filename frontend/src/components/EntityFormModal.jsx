@@ -4,7 +4,10 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 
 function valueFor(item, field) {
-  if (!item) return field.defaultValue ?? '';
+  if (!item) {
+    if (field.generateDefaultValue) return field.generateDefaultValue();
+    return field.defaultValue ?? '';
+  }
   if (field.getValue) return field.getValue(item) ?? '';
   return item[field.name] ?? field.defaultValue ?? '';
 }
@@ -71,7 +74,7 @@ export default function EntityFormModal({
           Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages]),
         ));
       } else {
-        setErrors({ general: error.response?.data?.message ?? t('forms.unableToSave') });
+        setErrors({ general: error.response?.data?.message ?? error.message ?? t('forms.unableToSave') });
       }
     } finally {
       setSaving(false);
@@ -87,7 +90,7 @@ export default function EntityFormModal({
           </div>
         )}
 
-        {fields.map((field) => (
+        {fields.map((field) => field.type === 'hidden' ? null : (
           <div key={field.name}>
             <label className="mb-1.5 block text-sm font-semibold text-slate-700">
               {field.label}
@@ -119,10 +122,18 @@ export default function EntityFormModal({
               <input
                 type={field.type ?? 'text'}
                 value={values[field.name] ?? ''}
-                onChange={(event) => update(field.name, event.target.value)}
+                onChange={(event) => {
+                  const nextValue = field.numericOnly
+                    ? event.target.value.replace(/\D/g, '').slice(0, field.maxLength)
+                    : event.target.value;
+                  update(field.name, nextValue);
+                }}
                 placeholder={field.placeholderKey ? t(field.placeholderKey) : field.placeholder}
                 min={field.min}
                 step={field.step}
+                inputMode={field.inputMode}
+                pattern={field.pattern}
+                maxLength={field.maxLength}
                 disabled={field.disabled}
                 className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors[field.name] ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
               />

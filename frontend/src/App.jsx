@@ -7,7 +7,6 @@ import Login from './pages/Login';
 import AccessDenied from './pages/AccessDenied';
 import AdminDashboard from './dashboards/AdminDashboard';
 import ManagerDashboard from './dashboards/ManagerDashboard';
-import OperatorDashboard from './dashboards/OperatorDashboard';
 import ViewerDashboard from './dashboards/ViewerDashboard';
 import Clients from './pages/Clients';
 import Compteurs from './pages/Compteurs';
@@ -66,15 +65,15 @@ export default function App() {
               </Route>
 
               <Route element={<ProtectedRoute roles={[ROLES.TECHNICIAN]} />}>
-                <Route path="technician/dashboard" element={<OperatorDashboard />} />
+                <Route path="technician/dashboard" element={<Navigate to="/technician/tasks" replace />} />
                 <Route path="technician/tasks" element={<MyTasks />} />
-                <Route path="technician/pannes" element={<Pannes />} />
-                <Route path="technician/repairs" element={<Reparations />} />
+                <Route path="technician/pannes" element={<Navigate to="/access-denied" replace />} />
+                <Route path="technician/repairs" element={<Navigate to="/access-denied" replace />} />
                 <Route path="technician/interventions" element={<Interventions />} />
-                <Route path="operator/dashboard" element={<Navigate to="/technician/dashboard" replace />} />
+                <Route path="operator/dashboard" element={<Navigate to="/technician/tasks" replace />} />
                 <Route path="operator/tasks" element={<Navigate to="/technician/tasks" replace />} />
-                <Route path="operator/pannes" element={<Navigate to="/technician/pannes" replace />} />
-                <Route path="operator/repairs" element={<Navigate to="/technician/repairs" replace />} />
+                <Route path="operator/pannes" element={<Navigate to="/access-denied" replace />} />
+                <Route path="operator/repairs" element={<Navigate to="/access-denied" replace />} />
               </Route>
 
               <Route element={<ProtectedRoute roles={[ROLES.VIEWER]} />}>

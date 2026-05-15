@@ -59,7 +59,7 @@ export default function Login({ onLogin }) {
                                 className="h-12 w-full bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
                                 id="identifiant"
                                 name="identifiant"
-                                placeholder="admin"
+                                placeholder="nabil.hammoch"
                                 type="text"
                                 value={form.identifiant}
                                 onChange={updateField}

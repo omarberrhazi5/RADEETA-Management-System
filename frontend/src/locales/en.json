@@ -327,7 +327,7 @@
     "add": "Add anomaly",
     "edit": "Edit anomaly",
     "create": "Create anomaly",
-    "deleteConfirm": "Delete anomaly #{{id}}? This action cannot be undone."
+    "deleteConfirm": "Delete this anomaly? This action cannot be undone."
   },
   "reparations": {
     "title": "Repairs",
@@ -336,7 +336,7 @@
     "add": "Create repair",
     "edit": "Edit repair",
     "create": "Create repair",
-    "deleteConfirm": "Delete repair #{{id}}? This action cannot be undone.",
+    "deleteConfirm": "Delete this repair? This action cannot be undone.",
     "defaultDescription": "Intervention completed"
   },
   "releves": {
@@ -453,28 +453,28 @@
     "anomaly_created": {
       "label": "New anomaly",
       "title": "New anomaly created",
-      "message": "Anomaly #{{id}} was reported for meter {{meter}}."
+      "message": "An anomaly was reported for meter {{meter}}."
     },
     "panne_assigned": {
       "label": "Assigned anomaly",
       "title": "Anomaly assigned",
-      "message": "Anomaly #{{id}} was assigned.",
-      "messageWithSector": "Anomaly #{{id}} was assigned in {{sector}}."
+      "message": "An anomaly was assigned.",
+      "messageWithSector": "An anomaly was assigned in {{sector}}."
     },
     "intervention_assigned": {
       "label": "Intervention assigned",
       "title": "Intervention assigned",
-      "message": "Intervention #{{id}} was assigned."
+      "message": "An intervention was assigned."
     },
     "repair_completed": {
       "label": "Repair completed",
       "title": "Repair completed",
-      "message": "Repair #{{id}} was completed for anomaly #{{panneId}}."
+      "message": "The repair was completed for an anomaly."
     },
     "status_changed": {
       "label": "Status changed",
       "title": "Status changed",
-      "message": "Intervention #{{id}} changed from {{from}} to {{to}}."
+      "message": "The intervention changed from {{from}} to {{to}}."
     },
     "user_created": {
       "label": "User created",
@@ -546,7 +546,7 @@
     "accessControl": "Access control",
     "missingCredentials": "Enter your login and password.",
     "invalidCredentials": "Invalid credentials or unavailable API.",
-    "identifierPlaceholder": "responsable",
+    "identifierPlaceholder": "nabil.hammoch",
     "passwordPlaceholder": "password"
   },
   "accessDenied": {

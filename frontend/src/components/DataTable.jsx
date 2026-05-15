@@ -6,6 +6,7 @@ import Button from './ui/Button';
 import { EmptyState, LoadingState } from './PageState';
 
 function valueFor(row, key) {
+  if (typeof key === 'function') return String(key(row) ?? '');
   const value = row[key];
   if (value === null || value === undefined) return '';
   if (typeof value === 'object') return JSON.stringify(value);
@@ -36,10 +37,11 @@ export default function DataTable({
   onDelete,
   filters,
   emptyMessage,
+  defaultSort,
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState({ key: columns[0]?.key, direction: 'asc' });
+  const [sort, setSort] = useState(defaultSort ?? { key: columns[0]?.key, direction: 'asc' });
   const [page, setPage] = useState(1);
   const pageSize = 12;
   const showCreate = onCreate && canCreate(role, resource);

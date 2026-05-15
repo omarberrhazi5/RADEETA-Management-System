@@ -13,8 +13,8 @@ function taskFromPanne(panne, t) {
   return {
     id: `panne-${panne.id}`,
     type: t('tasks.typePanne'),
-    title: `${t('tables.panne')} #${panne.id_panne ?? panne.id}`,
-    subtitle: `${translateAnomaly(t, panne.anomalie)} - ${panne.compteur?.cadran ?? t('tables.meter')}`,
+    title: translateAnomaly(t, panne.anomalie),
+    subtitle: panne.compteur?.cadran ?? t('tables.meter'),
     client: panne.compteur?.client ? `${panne.compteur.client.prenom ?? ''} ${panne.compteur.client.nom ?? ''}`.trim() : '-',
     sector: panne.compteur?.secteur?.nom_secteur ?? '-',
     due: panne.date_panne,

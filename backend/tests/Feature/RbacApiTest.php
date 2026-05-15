@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PanneStatus;
 use App\Enums\UserRole;
 use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Compteur;
 use App\Models\Intervention;
 use App\Models\Panne;
-use App\Models\Reparation;
 use App\Models\Releve;
+use App\Models\Reparation;
 use App\Models\User;
 use App\Notifications\UtilityNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -445,10 +446,124 @@ class RbacApiTest extends TestCase
             'status' => 'terminee',
             'work_type' => 'repair',
         ]);
+        $this->assertDatabaseHas('reparations', [
+            'id_panne' => $assignedPanne->id,
+            'id_plombier' => $technician->id,
+            'description' => 'Technical report completed.',
+        ]);
+        $this->assertDatabaseHas('pannes', [
+            'id' => $assignedPanne->id,
+            'status' => PanneStatus::Resolved->value,
+        ]);
 
         $this->putJson("/api/interventions/{$otherIntervention->id}", [
             'status' => 'en_cours',
         ])->assertForbidden();
+    }
+
+    public function test_assigned_anomaly_creates_pending_intervention(): void
+    {
+        $responsable = User::factory()->create(['role' => UserRole::Responsable]);
+        $technician = User::factory()->create(['role' => UserRole::Technician]);
+        $compteur = Compteur::factory()->create();
+
+        Sanctum::actingAs($responsable);
+
+        $response = $this->postJson('/api/pannes', [
+            'id_compteur' => $compteur->id,
+            'date_panne' => now()->toDateString(),
+            'anomalie' => 'fuite_apres_compteur',
+            'description' => 'Leak assigned for field repair.',
+            'technicien_id' => $technician->id,
+            'priorite' => 'urgent',
+            'status' => 'open',
+        ])->assertCreated();
+
+        $panneId = $response->json('data.id');
+
+        $this->assertDatabaseHas('interventions', [
+            'panne_id' => $panneId,
+            'technician_id' => $technician->id,
+            'meter_id' => $compteur->id,
+            'priority' => 'urgent',
+            'status' => 'en_attente',
+        ]);
+
+        Sanctum::actingAs($technician);
+
+        $this->getJson('/api/interventions')
+            ->assertOk()
+            ->assertJsonFragment([
+                'panne_id' => $panneId,
+                'technician_id' => $technician->id,
+                'status' => 'en_attente',
+            ]);
+    }
+
+    public function test_operational_indexes_return_newest_records_first_with_pagination(): void
+    {
+        $responsable = User::factory()->create(['role' => UserRole::Responsable]);
+        $technician = User::factory()->create(['role' => UserRole::Technician]);
+
+        $oldMeter = Compteur::factory()->create(['created_at' => now()->subDays(2)]);
+        $newMeter = Compteur::factory()->create(['created_at' => now()]);
+
+        $oldPanne = Panne::factory()->create(['created_at' => now()->subDays(2)]);
+        $newPanne = Panne::factory()->create(['created_at' => now()]);
+
+        $oldIntervention = Intervention::create([
+            'panne_id' => $oldPanne->id,
+            'technician_id' => $technician->id,
+            'started_at' => now()->subDays(2),
+            'work_type' => 'old inspection',
+            'priority' => 'normal',
+            'status' => 'en_attente',
+        ]);
+        $newIntervention = Intervention::create([
+            'panne_id' => $newPanne->id,
+            'technician_id' => $technician->id,
+            'started_at' => now()->subDays(2),
+            'work_type' => 'new inspection',
+            'priority' => 'normal',
+            'status' => 'en_attente',
+        ]);
+        $oldIntervention->forceFill([
+            'created_at' => now()->subDays(2),
+            'updated_at' => now()->subDays(2),
+        ])->save();
+        $newIntervention->forceFill([
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->save();
+
+        $oldRepair = Reparation::factory()->create([
+            'id_panne' => $oldPanne->id,
+            'id_plombier' => $technician->id,
+            'created_at' => now()->subDays(2),
+        ]);
+        $newRepair = Reparation::factory()->create([
+            'id_panne' => $newPanne->id,
+            'id_plombier' => $technician->id,
+            'created_at' => now(),
+        ]);
+
+        Sanctum::actingAs($responsable);
+
+        $this->getJson('/api/compteurs?limit=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $newMeter->id);
+
+        $this->getJson('/api/pannes?limit=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $newPanne->id);
+
+        $this->getJson('/api/interventions?limit=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $newIntervention->id);
+
+        $this->getJson('/api/reparations?limit=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $newRepair->id);
     }
 
     private function newUserPayload(): array

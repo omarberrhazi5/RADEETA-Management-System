@@ -15,7 +15,8 @@ class CompteurController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $limit = min((int) request('limit', 10), 500);
-        $query = Compteur::with('client', 'secteur', 'pannes');
+        $query = Compteur::with('client', 'secteur', 'pannes')
+            ->latest();
 
         if (OperatorAccess::isOperator($request->user())) {
             OperatorAccess::scopeCompteurs($query, $request->user());

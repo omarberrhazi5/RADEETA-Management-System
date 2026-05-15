@@ -20,10 +20,9 @@ function technicianName(technician) {
 }
 
 function panneLabel(t, panne) {
-  const id = panne?.id_panne ?? panne?.id;
   const meter = panneMeterCadran(panne) ?? panne?.id_compteur ?? '-';
   const description = panne?.description || translateAnomaly(t, panne?.anomalie);
-  return `#${id} - ${meter} - ${description}`;
+  return `${description} - ${meter}`;
 }
 
 function panneMeterCadran(panne) {
@@ -160,6 +159,7 @@ export default function Reparations() {
         role={role}
         loading={loading}
         rows={filteredItems}
+        defaultSort={{ key: (row) => row.created_at ?? row.date_reparation ?? '', direction: 'desc' }}
         filters={(
           <>
             <input type="month" value={filters.month} onChange={(event) => setFilters((current) => ({ ...current, month: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm" />
@@ -238,8 +238,8 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
 
   const selectedTechnician = technicians.find((technician) => String(technician.id) === String(values.technician_id));
   const selectedPanne = allPannes.find((panne) => String(panne.id_panne ?? panne.id) === String(values.id_panne));
-  const selectedTechnicianLabel = selectedTechnician ? technicianName(selectedTechnician) : values.technician_id ? `#${values.technician_id}` : '';
-  const selectedPanneLabel = selectedPanne ? panneLabel(t, selectedPanne) : values.id_panne ? `#${values.id_panne}` : '';
+  const selectedTechnicianLabel = selectedTechnician ? technicianName(selectedTechnician) : values.technician_id ? t('forms.technician') : '';
+  const selectedPanneLabel = selectedPanne ? panneLabel(t, selectedPanne) : values.id_panne ? t('tables.panne') : '';
   const showTechnicianSelect = role !== ROLES.TECHNICIAN;
   const showPanneSelect = role !== ROLES.TECHNICIAN;
   const availablePannes = allPannes;
@@ -426,7 +426,7 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
               setPanneQuery(value);
               update('id_panne', '');
             }}
-            placeholder="# / meter / anomaly"
+            placeholder="Meter / anomaly"
             error={errors.anomaly_id ?? errors.id_panne}
             selectedLabel={selectedPanneLabel}
             options={filteredPannes.map((panne) => ({

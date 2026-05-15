@@ -327,7 +327,7 @@
     "add": "Ajouter une anomalie",
     "edit": "Modifier l'anomalie",
     "create": "Creer l'anomalie",
-    "deleteConfirm": "Supprimer l'anomalie #{{id}} ? Cette action est irreversible."
+    "deleteConfirm": "Supprimer cette anomalie ? Cette action est irreversible."
   },
   "reparations": {
     "title": "Reparations",
@@ -336,7 +336,7 @@
     "add": "Creer une reparation",
     "edit": "Modifier la reparation",
     "create": "Creer la reparation",
-    "deleteConfirm": "Supprimer la reparation #{{id}} ? Cette action est irreversible.",
+    "deleteConfirm": "Supprimer cette reparation ? Cette action est irreversible.",
     "defaultDescription": "Intervention terminee"
   },
   "releves": {
@@ -453,28 +453,28 @@
     "anomaly_created": {
       "label": "Nouvelle anomalie",
       "title": "Nouvelle anomalie creee",
-      "message": "L'anomalie #{{id}} a ete signalee pour le compteur {{meter}}."
+      "message": "Une anomalie a ete signalee pour le compteur {{meter}}."
     },
     "panne_assigned": {
       "label": "Anomalie affectee",
       "title": "Anomalie affectee",
-      "message": "L'anomalie #{{id}} a ete affectee.",
-      "messageWithSector": "L'anomalie #{{id}} a ete affectee dans {{sector}}."
+      "message": "Une anomalie a ete affectee.",
+      "messageWithSector": "Une anomalie a ete affectee dans {{sector}}."
     },
     "intervention_assigned": {
       "label": "Intervention affectee",
       "title": "Intervention affectee",
-      "message": "L'intervention #{{id}} a ete affectee."
+      "message": "Une intervention a ete affectee."
     },
     "repair_completed": {
       "label": "Reparation terminee",
       "title": "Reparation terminee",
-      "message": "La reparation #{{id}} est terminee pour l'anomalie #{{panneId}}."
+      "message": "La reparation est terminee pour une anomalie."
     },
     "status_changed": {
       "label": "Statut modifie",
       "title": "Statut modifie",
-      "message": "L'intervention #{{id}} est passee de {{from}} a {{to}}."
+      "message": "L'intervention est passee de {{from}} a {{to}}."
     },
     "user_created": {
       "label": "Utilisateur cree",
@@ -546,7 +546,7 @@
     "accessControl": "Controle d'acces",
     "missingCredentials": "Saisissez votre identifiant et votre mot de passe.",
     "invalidCredentials": "Identifiants invalides ou API indisponible.",
-    "identifierPlaceholder": "responsable",
+    "identifierPlaceholder": "nabil.hammoch",
     "passwordPlaceholder": "mot de passe"
   },
   "accessDenied": {

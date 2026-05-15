@@ -69,7 +69,7 @@ export default function PanneMap({ pannes = [], sectors = [], height = '420px', 
                   <strong className="block text-gray-900">{point.label ?? t('map.sector')}</strong>
                   {point.panne && (
                     <>
-                      <div><span className="font-semibold">{t('tables.panne')}:</span> #{point.panne.id_panne ?? point.panne.id}</div>
+                      <div><span className="font-semibold">{t('tables.panne')}:</span> {translateAnomaly(t, point.panne.anomalie)}</div>
                       <div><span className="font-semibold">{t('tables.client')}:</span> {point.panne.compteur?.client ? `${point.panne.compteur.client.prenom ?? ''} ${point.panne.compteur.client.nom ?? ''}`.trim() : '-'}</div>
                       <div><span className="font-semibold">{t('tables.anomaly')}:</span> {translateAnomaly(t, point.panne.anomalie)}</div>
                       <div><span className="font-semibold">{t('tables.technician')}:</span> {point.panne.assigned_technician || point.panne.assigned_operator ? `${(point.panne.assigned_technician ?? point.panne.assigned_operator).prenom ?? ''} ${(point.panne.assigned_technician ?? point.panne.assigned_operator).nom ?? ''}`.trim() : '-'}</div>

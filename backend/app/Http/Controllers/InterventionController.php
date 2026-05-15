@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\PanneStatus;
 use App\Enums\UserRole;
 use App\Http\Resources\InterventionResource;
 use App\Models\ActivityLog;
 use App\Models\Intervention;
 use App\Models\Panne;
+use App\Models\Reparation;
 use App\Policies\InterventionPolicy;
 use App\Services\NotificationService;
 use App\Support\OperatorAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class InterventionController extends Controller
@@ -22,7 +25,8 @@ class InterventionController extends Controller
         abort_unless($policy->viewAny($request->user()), 403, 'Forbidden');
 
         $limit = min((int) $request->integer('limit', 10), 500);
-        $query = Intervention::with('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter', 'technician')->latest('started_at');
+        $query = Intervention::with('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter', 'technician')
+            ->latest();
 
         if (OperatorAccess::isOperator($request->user())) {
             $query->where('technician_id', $request->user()->id);
@@ -88,7 +92,15 @@ class InterventionController extends Controller
         $this->limitUpdatePayload($request, $validated);
 
         $previousStatus = $intervention->status;
-        $intervention->update($validated);
+        $autoRepair = null;
+
+        DB::transaction(function () use ($request, $intervention, $validated, $previousStatus, &$autoRepair): void {
+            $intervention->update($validated);
+
+            if ($this->shouldAutoLogRepair($request, $validated, $previousStatus)) {
+                $autoRepair = $this->autoLogRepair($intervention);
+            }
+        });
 
         if (array_key_exists('status', $validated) && $previousStatus !== $validated['status']) {
             ActivityLog::record('Status modifié', 'Interventions', $request, [
@@ -99,6 +111,15 @@ class InterventionController extends Controller
             $notifications->statusChanged($intervention, $previousStatus, $validated['status']);
         } else {
             ActivityLog::record('Intervention modifiée', 'Interventions', $request, ['intervention_id' => $intervention->id]);
+        }
+
+        if ($autoRepair) {
+            ActivityLog::record('Réparation automatique', 'Reparations', $request, [
+                'intervention_id' => $intervention->id,
+                'reparation_id' => $autoRepair->id,
+                'panne_id' => $autoRepair->id_panne,
+            ]);
+            $notifications->repairCompleted($autoRepair);
         }
 
         return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter', 'technician')))->response();
@@ -216,5 +237,36 @@ class InterventionController extends Controller
         $validated['meter_id'] = $validated['meter_id'] ?? $panne->id_compteur;
         $validated['client_id'] = $validated['client_id'] ?? $panne->compteur?->id_client;
         $validated['service_type'] = $validated['service_type'] ?? $panne->compteur?->service_type ?? 'water';
+    }
+
+    private function shouldAutoLogRepair(Request $request, array $validated, ?string $previousStatus): bool
+    {
+        return OperatorAccess::isOperator($request->user())
+            && ($validated['status'] ?? null) === 'terminee'
+            && $previousStatus !== 'terminee';
+    }
+
+    private function autoLogRepair(Intervention $intervention): ?Reparation
+    {
+        if (! $intervention->panne_id || ! $intervention->technician_id) {
+            return null;
+        }
+
+        if (Reparation::where('id_panne', $intervention->panne_id)->exists()) {
+            Panne::whereKey($intervention->panne_id)->update(['status' => PanneStatus::Resolved->value]);
+
+            return null;
+        }
+
+        $repair = Reparation::create([
+            'id_panne' => $intervention->panne_id,
+            'id_plombier' => $intervention->technician_id,
+            'date_reparation' => ($intervention->completed_at ?? now())->toDateString(),
+            'description' => $intervention->observations,
+        ]);
+
+        $repair->panne()->update(['status' => PanneStatus::Resolved->value]);
+
+        return $repair;
     }
 }

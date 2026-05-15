@@ -41,10 +41,7 @@ const nav = [
   { group: 'navigation', labelKey: 'sidebar.interventions', path: '/manager/interventions', icon: ClipboardCheck, roles: [ROLES.MANAGER] },
   { group: 'navigation', labelKey: 'sidebar.reports', path: '/manager/reports', icon: FileBarChart, roles: [ROLES.MANAGER] },
 
-  { group: 'navigation', labelKey: 'sidebar.dashboard', path: '/technician/dashboard', icon: LayoutDashboard, roles: [ROLES.TECHNICIAN] },
   { group: 'navigation', labelKey: 'sidebar.myTasks', path: '/technician/tasks', icon: ListChecks, roles: [ROLES.TECHNICIAN] },
-  { group: 'navigation', labelKey: 'sidebar.anomalies', path: '/technician/pannes', icon: ClipboardList, roles: [ROLES.TECHNICIAN] },
-  { group: 'navigation', labelKey: 'sidebar.repairs', path: '/technician/repairs', icon: Wrench, roles: [ROLES.TECHNICIAN] },
   { group: 'navigation', labelKey: 'sidebar.interventions', path: '/technician/interventions', icon: ClipboardCheck, roles: [ROLES.TECHNICIAN] },
 
   { group: 'navigation', labelKey: 'sidebar.dashboard', path: '/viewer/dashboard', icon: LayoutDashboard, roles: [ROLES.VIEWER] },
