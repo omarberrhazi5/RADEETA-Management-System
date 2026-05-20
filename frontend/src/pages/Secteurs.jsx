@@ -31,17 +31,11 @@ export default function Secteurs() {
       ],
     },
     { name: 'agence', label: t('forms.agency'), required: true, defaultValue: 'SRM-FM Taza' },
-    { name: 'num_torne', label: t('forms.routeNumber'), required: true, placeholder: 'T-001' },
-    { name: 'latitude', label: t('forms.latitude'), type: 'number', step: '0.000001' },
-    { name: 'longitude', label: t('forms.longitude'), type: 'number', step: '0.000001' },
+    { name: 'num_torne', label: 'Numéro de secteur', required: true, placeholder: 'S-001' },
   ], [t]);
 
   async function saveSector(values) {
-    const payload = {
-      ...values,
-      latitude: values.latitude === '' ? null : values.latitude,
-      longitude: values.longitude === '' ? null : values.longitude,
-    };
+    const payload = { ...values };
 
     if (formState?.item) {
       await api.put(`/secteurs/${formState.item.id_secteur ?? formState.item.id}`, payload);
@@ -80,8 +74,6 @@ export default function Secteurs() {
           { key: 'emplacement', header: t('tables.location') },
           { key: 'agence', header: t('tables.agency') },
           { key: 'num_torne', header: t('tables.tour') },
-          { key: 'latitude', header: t('tables.latitude') },
-          { key: 'longitude', header: t('tables.longitude') },
         ]}
       />
       {formState && (

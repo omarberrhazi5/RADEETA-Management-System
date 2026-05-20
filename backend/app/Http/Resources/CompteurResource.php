@@ -17,6 +17,7 @@ class CompteurResource extends JsonResource
             'num_tournee' => $this->num_tournee ?: 'N/A',
             'usage' => $this->usage ?: 'N/A',
             'calibre' => $this->calibre,
+            'technical_type' => $this->technical_type,
             'marque' => $this->marque,
             'service_type' => $this->service_type,
             'type_produit' => $this->service_type === 'electricity' ? 'ELEC' : 'EAU',

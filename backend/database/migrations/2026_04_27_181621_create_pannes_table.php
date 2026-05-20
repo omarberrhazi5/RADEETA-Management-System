@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\PanneAnomalie;
 use App\Enums\PanneStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -17,7 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_compteur')->constrained('compteurs')->cascadeOnDelete();
             $table->date('date_panne');
-            $table->enum('anomalie', PanneAnomalie::values());
+            $table->string('anomalie')->nullable();
             $table->text('description')->nullable();
             $table->enum('status', PanneStatus::values())->default(PanneStatus::Open->value);
             $table->timestamps();

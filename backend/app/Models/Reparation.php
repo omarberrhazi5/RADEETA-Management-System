@@ -16,6 +16,9 @@ class Reparation extends Model
         'id_plombier',
         'date_reparation',
         'description',
+        'latitude',
+        'longitude',
+        'location_note',
     ];
 
     protected function casts(): array

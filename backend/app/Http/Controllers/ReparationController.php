@@ -33,6 +33,8 @@ class ReparationController extends Controller
 
     public function store(ReparationRequest $request, NotificationService $notifications): JsonResponse
     {
+        $this->forbidMonitoringRole($request);
+
         $validated = $request->validated();
 
         $reparation = DB::transaction(function () use ($validated): Reparation {
@@ -56,6 +58,7 @@ class ReparationController extends Controller
 
     public function update(ReparationRequest $request, Reparation $reparation, NotificationService $notifications): JsonResponse
     {
+        $this->forbidMonitoringRole($request);
         $this->authorizeOperatorReparationAccess($request, $reparation);
 
         $validated = $request->validated();
@@ -77,8 +80,10 @@ class ReparationController extends Controller
         return (new ReparationResource($reparation->load('panne.compteur.client', 'panne.compteur.secteur', 'plombier')))->response();
     }
 
-    public function destroy(Reparation $reparation): JsonResponse
+    public function destroy(Request $request, Reparation $reparation): JsonResponse
     {
+        $this->forbidMonitoringRole($request);
+
         DB::transaction(function () use ($reparation): void {
             $panneId = $reparation->id_panne;
 
@@ -132,5 +137,16 @@ class ReparationController extends Controller
             'description',
             'id_plombier',
         ]));
+    }
+
+    private function forbidMonitoringRole(Request $request): void
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        abort_if(
+            in_array($value, [UserRole::Responsable->value, UserRole::Manager->value], true),
+            response()->json(['message' => 'Action non autorisée'], 403)
+        );
     }
 }

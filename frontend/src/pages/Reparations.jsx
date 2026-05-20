@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -14,6 +14,7 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 import { translateAnomaly, translateRepairDescription } from '../utils/i18nLabels';
 import { ROLES } from '../utils/rbac';
+import { errorText, fieldError, focusFirstInvalid } from '../utils/formValidation';
 
 function technicianName(technician) {
   return `${technician?.prenom ?? ''} ${technician?.nom ?? ''}`.trim() || technician?.identifiant || '-';
@@ -96,6 +97,9 @@ export default function Reparations() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [filters, setFilters] = useState({ month: '', operator: '' });
+  const isMonitoringRole = [ROLES.RESPONSABLE, ROLES.MANAGER].includes(role);
+  const targetRepairId = location.state?.targetRepairId ?? location.state?.targetReparationId ?? null;
+  const targetPanneId = location.state?.targetPanneId ?? null;
 
   const createRepair = useCallback((panne = null) => {
     setFormState({
@@ -126,11 +130,13 @@ export default function Reparations() {
   }
 
   useEffect(() => {
+    if (isMonitoringRole) return;
+
     if (location.state?.panne) {
       createRepair(location.state.panne);
       window.history.replaceState({}, document.title);
     }
-  }, [createRepair, location.state?.panne]);
+  }, [createRepair, isMonitoringRole, location.state?.panne]);
 
   async function deleteRepair(repair) {
     try {
@@ -146,7 +152,9 @@ export default function Reparations() {
   const filteredItems = items.filter((item) => {
     const matchesMonth = !filters.month || String(item.date_reparation ?? '').startsWith(filters.month);
     const matchesOperator = !filters.operator || String(item.id_plombier ?? '') === filters.operator;
-    return matchesMonth && matchesOperator;
+    const matchesTargetRepair = !targetRepairId || String(item.id_reparation ?? item.id) === String(targetRepairId);
+    const matchesTargetPanne = !targetPanneId || String(item.id_panne ?? item.panne_id) === String(targetPanneId);
+    return matchesMonth && matchesOperator && matchesTargetRepair && matchesTargetPanne;
   });
 
   return (
@@ -172,9 +180,12 @@ export default function Reparations() {
           </>
         )}
         emptyMessage={t('reparations.empty')}
-        onCreate={() => createRepair()}
-        onEdit={(repair) => setFormState({ item: repair, isCreate: false })}
-        onDelete={setDeleteTarget}
+        onCreate={isMonitoringRole ? undefined : () => createRepair()}
+        onEdit={isMonitoringRole ? undefined : (repair) => setFormState({ item: repair, isCreate: false })}
+        onDelete={isMonitoringRole ? undefined : setDeleteTarget}
+        allowCreate={isMonitoringRole ? false : undefined}
+        allowEdit={isMonitoringRole ? false : undefined}
+        allowDelete={isMonitoringRole ? false : undefined}
         columns={[
           { key: 'service_type', header: t('tables.service'), render: (row) => {
             const serviceType = row.panne?.compteur?.service_type ?? row.service_type ?? 'water';
@@ -213,6 +224,7 @@ export default function Reparations() {
 
 function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes, role, isCreate, onClose, onSubmit }) {
   const { t } = useTranslation();
+  const formRef = useRef(null);
   const [values, setValues] = useState({
     id_panne: initialItem?.id_panne ?? '',
     technician_id: initialItem?.technician_id ?? initialItem?.id_plombier ?? '',
@@ -244,6 +256,13 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
   const showPanneSelect = role !== ROLES.TECHNICIAN;
   const availablePannes = allPannes;
 
+  const validateField = useCallback((name, value = values[name]) => {
+    if (name === 'id_panne') return fieldError(value, { required: true }, t);
+    if (name === 'technician_id' && showTechnicianSelect) return fieldError(value, { required: true }, t);
+    if (name === 'date_reparation') return fieldError(value, { required: true, type: 'date' }, t);
+    return '';
+  }, [showTechnicianSelect, t, values]);
+
   const update = useCallback((name, value) => {
     setValues((current) => ({ ...current, [name]: value }));
     const aliases = {
@@ -251,8 +270,8 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
       technician_id: 'id_plombier',
       date_reparation: 'repair_date',
     };
-    setErrors((current) => ({ ...current, [name]: '', [aliases[name]]: '', general: '' }));
-  }, []);
+    setErrors((current) => ({ ...current, [name]: validateField(name, value), [aliases[name]]: '', general: '' }));
+  }, [validateField]);
 
   const selectTechnician = useCallback((technician) => {
     update('technician_id', String(technician.id));
@@ -392,12 +411,14 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
   async function submit(event) {
     event.preventDefault();
     const nextErrors = {};
-    if (!String(values.id_panne ?? '').trim()) nextErrors.id_panne = t('forms.required');
-    if (showTechnicianSelect && !String(values.technician_id ?? '').trim()) nextErrors.technician_id = t('forms.required');
-    if (!String(values.date_reparation ?? '').trim()) nextErrors.date_reparation = t('forms.required');
+    ['id_panne', 'technician_id', 'date_reparation'].forEach((field) => {
+      const error = validateField(field);
+      if (error) nextErrors[field] = error;
+    });
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+      focusFirstInvalid(formRef, nextErrors);
       return;
     }
 
@@ -414,12 +435,13 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
 
   return (
     <Modal title={title} onClose={onClose} maxWidth="max-w-2xl">
-      <form onSubmit={submit} className="space-y-4">
+      <form ref={formRef} onSubmit={submit} noValidate className="space-y-4">
         {errors.general && <div className="rounded-xl border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm font-medium text-[var(--srm-red)]">{errors.general}</div>}
 
         {showPanneSelect ? (
           <SearchableSelect
             label={t('forms.panneId')}
+            name="id_panne"
             required
             query={panneQuery}
             setQuery={(value) => {
@@ -445,6 +467,7 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
         {showTechnicianSelect && (
           <SearchableSelect
             label={t('forms.technician')}
+            name="technician_id"
             required
             query={technicianQuery}
             setQuery={(value) => {
@@ -478,7 +501,7 @@ function RepairFormModal({ title, initialItem, submitLabel, technicians, pannes,
   );
 }
 
-function SearchableSelect({ label, required, query, setQuery, placeholder, error, selectedLabel, options, loading = false, onSelect }) {
+function SearchableSelect({ label, name, required, query, setQuery, placeholder, error, selectedLabel, options, loading = false, onSelect }) {
   const { t } = useTranslation();
 
   return (
@@ -490,6 +513,7 @@ function SearchableSelect({ label, required, query, setQuery, placeholder, error
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={query}
+          name={name}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={placeholder}
           className={`w-full rounded-xl border bg-slate-50/80 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
@@ -517,7 +541,7 @@ function SearchableSelect({ label, required, query, setQuery, placeholder, error
           {selectedLabel}
         </div>
       )}
-      {error && <p className="mt-1 text-xs font-medium text-[var(--srm-red)]">{error}</p>}
+      {error && <p className="mt-1 text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(error)}</p>}
     </label>
   );
 }
@@ -528,11 +552,12 @@ function Field({ label, name, value, onChange, error, type = 'text', required = 
       <span className="mb-1.5 block text-sm font-semibold text-slate-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
       <input
         type={type}
+        name={name}
         value={value ?? ''}
         onChange={(event) => onChange(name, event.target.value)}
-        className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
+        className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
       />
-      {error && <p className="mt-1 text-xs font-medium text-[var(--srm-red)]">{error}</p>}
+      {error && <p className="mt-1 text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(error)}</p>}
     </label>
   );
 }
@@ -543,11 +568,12 @@ function Textarea({ label, name, value, onChange, error }) {
       <span className="mb-1.5 block text-sm font-semibold text-slate-700">{label}</span>
       <textarea
         rows={3}
+        name={name}
         value={value ?? ''}
         onChange={(event) => onChange(name, event.target.value)}
-        className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
+        className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
       />
-      {error && <p className="mt-1 text-xs font-medium text-[var(--srm-red)]">{error}</p>}
+      {error && <p className="mt-1 text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(error)}</p>}
     </label>
   );
 }

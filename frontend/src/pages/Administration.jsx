@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import {
@@ -32,6 +32,7 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 import { translateActivityAction, translateModule, translateRole } from '../utils/i18nLabels';
 import { ROLES } from '../utils/rbac';
+import { errorText, fieldError, focusFirstInvalid, normalizeApiErrors } from '../utils/formValidation';
 
 const tabs = [
   { key: 'users', labelKey: 'administration.tabs.users', icon: Users },
@@ -286,22 +287,35 @@ function IconAction({ children, label, color, onClick, disabled = false }) {
 
 function UserModal({ onClose, onCreated, notify }) {
   const { t } = useTranslation();
+  const formRef = useRef(null);
   const [values, setValues] = useState({ identifiant: '', prenom: '', nom: '', email: '', password: '', role: ROLES.VIEWER, agence: 'SRM-FM Taza' });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   function update(name, value) {
-    setValues((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+    const nextValues = { ...values, [name]: value };
+    setValues(nextValues);
+    setErrors((current) => ({
+      ...current,
+      [name]: validateField(name, nextValues),
+      general: '',
+    }));
+  }
+
+  function validateField(name, nextValues = values) {
+    if (['identifiant', 'nom', 'password', 'role'].includes(name)) {
+      return fieldError(nextValues[name], { required: true, minLength: name === 'password' ? 8 : undefined }, t);
+    }
+    if (name === 'email') return fieldError(nextValues.email, { type: 'email' }, t);
+    return '';
   }
 
   function validate() {
     const next = {};
-    ['identifiant', 'nom', 'password', 'role'].forEach((field) => {
-      if (!String(values[field] ?? '').trim()) next[field] = t('forms.required');
+    ['identifiant', 'nom', 'password', 'role', 'email'].forEach((field) => {
+      const error = validateField(field);
+      if (error) next[field] = error;
     });
-    if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) next.email = t('forms.invalidEmail');
-    if (values.password && values.password.length < 8) next.password = t('forms.minPassword');
     return next;
   }
 
@@ -310,6 +324,7 @@ function UserModal({ onClose, onCreated, notify }) {
     const next = validate();
     if (Object.keys(next).length) {
       setErrors(next);
+      focusFirstInvalid(formRef, next);
       return;
     }
     try {
@@ -318,7 +333,7 @@ function UserModal({ onClose, onCreated, notify }) {
       onCreated();
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
-      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('administration.creationImpossible') });
+      setErrors(normalizeApiErrors(apiErrors, error.response?.data?.message ?? t('administration.creationImpossible')));
       notify('error', t('administration.createFailed'));
     } finally {
       setSaving(false);
@@ -327,7 +342,7 @@ function UserModal({ onClose, onCreated, notify }) {
 
   return (
     <Modal title={t('buttons.create')} onClose={onClose} maxWidth="max-w-2xl">
-      <form onSubmit={submit} className="space-y-4">
+      <form ref={formRef} onSubmit={submit} noValidate className="space-y-4">
         {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label={t('forms.identifier')} name="identifiant" value={values.identifiant} error={errors.identifiant} onChange={update} required />
@@ -348,6 +363,7 @@ function UserModal({ onClose, onCreated, notify }) {
 
 function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
   const { t } = useTranslation();
+  const formRef = useRef(null);
   const isSelf = Number(currentUser?.id) === Number(user.id);
   const [values, setValues] = useState({
     prenom: user.prenom ?? '',
@@ -359,15 +375,24 @@ function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
   const [saving, setSaving] = useState(false);
 
   function update(name, value) {
-    setValues((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+    const nextValues = { ...values, [name]: value };
+    setValues(nextValues);
+    setErrors((current) => ({ ...current, [name]: validateField(name, nextValues), general: '' }));
+  }
+
+  function validateField(name, nextValues = values) {
+    if (name === 'nom') return fieldError(nextValues.nom, { required: true }, t);
+    if (name === 'role') return fieldError(nextValues.role, { required: true }, t);
+    if (name === 'email') return fieldError(nextValues.email, { type: 'email' }, t);
+    return '';
   }
 
   function validate() {
     const next = {};
-    if (!values.nom.trim()) next.nom = t('forms.required');
-    if (!values.role) next.role = t('forms.required');
-    if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) next.email = t('forms.invalidEmail');
+    ['nom', 'role', 'email'].forEach((field) => {
+      const error = validateField(field);
+      if (error) next[field] = error;
+    });
     return next;
   }
 
@@ -376,6 +401,7 @@ function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
     const next = validate();
     if (Object.keys(next).length) {
       setErrors(next);
+      focusFirstInvalid(formRef, next);
       return;
     }
     try {
@@ -389,7 +415,7 @@ function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
       onSaved();
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
-      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('administration.updateFailed') });
+      setErrors(normalizeApiErrors(apiErrors, error.response?.data?.message ?? t('administration.updateFailed')));
       notify('error', t('administration.updateFailed'));
     } finally {
       setSaving(false);
@@ -398,7 +424,7 @@ function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
 
   return (
     <Modal title={t('administration.editUser')} onClose={onClose} maxWidth="max-w-2xl">
-      <form onSubmit={submit} className="space-y-4">
+      <form ref={formRef} onSubmit={submit} noValidate className="space-y-4">
         {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
         {isSelf && <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">{t('administration.selfRoleLocked')}</div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -418,23 +444,34 @@ function UserEditModal({ user, currentUser, onClose, onSaved, notify }) {
 
 function PasswordResetModal({ user, onClose, onSaved, notify }) {
   const { t } = useTranslation();
+  const formRef = useRef(null);
   const [values, setValues] = useState({ password: '', password_confirmation: '' });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   function update(name, value) {
-    setValues((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+    const nextValues = { ...values, [name]: value };
+    setValues(nextValues);
+    setErrors((current) => ({ ...current, [name]: validateField(name, nextValues), general: '' }));
+  }
+
+  function validateField(name, nextValues = values) {
+    if (name === 'password') return fieldError(nextValues.password, { required: true, minLength: 8 }, t);
+    if (name === 'password_confirmation' && nextValues.password !== nextValues.password_confirmation) return t('administration.passwordMismatch');
+    if (name === 'password_confirmation') return fieldError(nextValues.password_confirmation, { required: true }, t);
+    return '';
   }
 
   async function submit(event) {
     event.preventDefault();
     const next = {};
-    if (!values.password) next.password = t('forms.required');
-    if (values.password && values.password.length < 8) next.password = t('forms.minPassword');
-    if (values.password !== values.password_confirmation) next.password_confirmation = t('administration.passwordMismatch');
+    ['password', 'password_confirmation'].forEach((field) => {
+      const error = validateField(field);
+      if (error) next[field] = error;
+    });
     if (Object.keys(next).length) {
       setErrors(next);
+      focusFirstInvalid(formRef, next);
       return;
     }
     try {
@@ -443,7 +480,7 @@ function PasswordResetModal({ user, onClose, onSaved, notify }) {
       onSaved();
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
-      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('administration.passwordResetFailed') });
+      setErrors(normalizeApiErrors(apiErrors, error.response?.data?.message ?? t('administration.passwordResetFailed')));
       notify('error', t('administration.passwordResetFailed'));
     } finally {
       setSaving(false);
@@ -452,7 +489,7 @@ function PasswordResetModal({ user, onClose, onSaved, notify }) {
 
   return (
     <Modal title={t('administration.resetPassword')} onClose={onClose} maxWidth="max-w-md">
-      <form onSubmit={submit} className="space-y-4">
+      <form ref={formRef} onSubmit={submit} noValidate className="space-y-4">
         {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">{userName(user)}</div>
         <Field label={t('forms.password')} name="password" type="password" value={values.password} error={errors.password} onChange={update} required />
@@ -535,6 +572,7 @@ function RolesTab() {
 
 function SettingsTab({ notify }) {
   const { t } = useTranslation();
+  const formRef = useRef(null);
   const settings = useResource(endpoints.settings);
   const [values, setValues] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -558,11 +596,33 @@ function SettingsTab({ notify }) {
       const [group, key] = path.split('.');
       return { ...current, [group]: { ...current[group], [key]: value } };
     });
+    setErrors((current) => ({ ...current, [path]: '', general: '' }));
+  }
+
+  function validate() {
+    const next = {};
+    ['agency_name', 'application_name', 'default_language'].forEach((field) => {
+      const error = fieldError(values[field], { required: true }, t);
+      if (error) next[field] = error;
+    });
+
+    ['notification_preferences.email', 'notification_preferences.in_app', 'notification_preferences.daily_digest', 'dashboard_preferences.show_maps', 'dashboard_preferences.show_charts', 'dashboard_preferences.compact_cards'].forEach((field) => {
+      const [group, key] = field.split('.');
+      if (typeof values[group]?.[key] !== 'boolean') next[field] = t('forms.required');
+    });
+
+    return next;
   }
 
   async function save(event) {
     event.preventDefault();
-    setErrors({});
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      focusFirstInvalid(formRef, nextErrors);
+      return;
+    }
+
     try {
       setSaving(true);
       const response = await api.put('/settings', values);
@@ -570,7 +630,7 @@ function SettingsTab({ notify }) {
       notify('success', t('administration.settingsSaved'));
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
-      setErrors(apiErrors ?? { general: error.response?.data?.message ?? t('administration.saveImpossible') });
+      setErrors(normalizeApiErrors(apiErrors, error.response?.data?.message ?? t('administration.saveImpossible')));
       notify('error', t('administration.saveSettingsFailed'));
     } finally {
       setSaving(false);
@@ -581,14 +641,14 @@ function SettingsTab({ notify }) {
   if (settings.error) return <ErrorState message={settings.error} />;
 
   return (
-    <form onSubmit={save} className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+    <form ref={formRef} onSubmit={save} noValidate className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm xl:col-span-2">
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900"><SlidersHorizontal size={17} />{t('administration.generalSettings')}</div>
         {errors.general && <div className="mb-3 rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Field label={t('forms.agencyName')} name="agency_name" value={values.agency_name} onChange={update} error={errors.agency_name} />
-          <Field label={t('forms.applicationName')} name="application_name" value={values.application_name} onChange={update} error={errors.application_name} />
-          <Select label={t('forms.defaultLanguage')} name="default_language" value={values.default_language} onChange={update} options={[['fr', t('common.french')], ['en', t('common.english')]]} error={errors.default_language} />
+          <Field label={t('forms.agencyName')} name="agency_name" value={values.agency_name} onChange={update} error={errors.agency_name} required />
+          <Field label={t('forms.applicationName')} name="application_name" value={values.application_name} onChange={update} error={errors.application_name} required />
+          <Select label={t('forms.defaultLanguage')} name="default_language" value={values.default_language} onChange={update} options={[['fr', t('common.french')], ['en', t('common.english')]]} error={errors.default_language} required />
         </div>
       </div>
       <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -685,8 +745,8 @@ function Field({ label, name, value, onChange, error, type = 'text', required = 
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
-      <input type={type} value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`} />
-      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{Array.isArray(error) ? error[0] : error}</span>}
+      <input name={name} type={type} value={value ?? ''} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-xl border px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-gray-200'}`} />
+      {error && <span className="mt-1 block text-xs text-red-500 transition-opacity duration-300">{errorText(error)}</span>}
     </label>
   );
 }
@@ -695,10 +755,10 @@ function Select({ label, name, value, options, onChange, error, required = false
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
-      <select value={value ?? ''} disabled={disabled} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}>
+      <select name={name} value={value ?? ''} disabled={disabled} onChange={(event) => onChange(name, event.target.value)} className={`h-11 w-full rounded-xl border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-gray-200'}`}>
         {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
       </select>
-      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{Array.isArray(error) ? error[0] : error}</span>}
+      {error && <span className="mt-1 block text-xs text-red-500 transition-opacity duration-300">{errorText(error)}</span>}
     </label>
   );
 }

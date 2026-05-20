@@ -11,6 +11,29 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 import { translateStatus } from '../utils/i18nLabels';
 
+function sectorPrefix(secteur) {
+  const tourDigits = String(secteur?.num_torne ?? '').replace(/\D/g, '');
+  const source = tourDigits || String(secteur?.id_secteur ?? secteur?.id ?? '').replace(/\D/g, '');
+
+  return source.slice(-3).padStart(3, '0');
+}
+
+function randomSixDigits() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function generateContractNumber(secteur, existingClients = []) {
+  const prefix = sectorPrefix(secteur);
+  const existing = new Set(existingClients.map((client) => String(client.police ?? '')));
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const contractNumber = `${prefix}${randomSixDigits()}`;
+    if (!existing.has(contractNumber)) return contractNumber;
+  }
+
+  return `${prefix}${randomSixDigits()}`;
+}
+
 export default function Clients() {
   const { t } = useTranslation();
   const { role } = useAuth();
@@ -20,12 +43,26 @@ export default function Clients() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [status, setStatus] = useState('');
+  const defaultSecteur = secteurs.items[0] ?? null;
 
   const fields = useMemo(() => [
-    { name: 'police', label: t('forms.contractNumber'), required: true },
+    {
+      name: 'police',
+      label: t('forms.contractNumber'),
+      required: true,
+      inputMode: 'numeric',
+      pattern: '[0-9]{9}',
+      patternMessage: t('forms.contractNumberRequired', { defaultValue: t('forms.required') }),
+      maxLength: 9,
+      numericOnly: true,
+      readOnly: true,
+      disabled: true,
+      generateDefaultValue: () => generateContractNumber(defaultSecteur, items),
+      getValue: (item) => item.police ?? '',
+    },
     { name: 'nom', label: t('forms.lastName'), required: true },
     { name: 'prenom', label: t('forms.firstName') },
-    { name: 'cin', label: t('forms.cin') },
+    { name: 'cin', label: t('forms.cin'), required: true },
     { name: 'telephone', label: t('forms.phone') },
     {
       name: 'adresse',
@@ -52,11 +89,11 @@ export default function Clients() {
       label: t('forms.subscriptionType'),
       type: 'select',
       required: true,
-      defaultValue: 'domestic',
+      defaultValue: 'Domestique',
       options: [
-        { value: 'domestic', label: t('subscriptions.domestic') },
-        { value: 'commercial', label: t('subscriptions.commercial') },
-        { value: 'industrial', label: t('subscriptions.industrial') },
+        { value: 'Domestique', label: t('subscriptions.Domestique') },
+        { value: 'Patente', label: t('subscriptions.Patente') },
+        { value: 'Administration', label: t('subscriptions.Administration') },
       ],
     },
     {
@@ -75,13 +112,20 @@ export default function Clients() {
       label: t('forms.sector'),
       type: 'select',
       required: true,
+      defaultValue: defaultSecteur ? String(defaultSecteur.id_secteur ?? defaultSecteur.id) : '',
       options: secteurs.items.map((secteur) => ({
         value: String(secteur.id_secteur ?? secteur.id),
         label: `${secteur.nom_secteur} - ${secteur.agence ?? 'SRM-FM'}`,
       })),
       getValue: (item) => String(item.id_secteur ?? item.secteur?.id_secteur ?? item.secteur?.id ?? ''),
+      populateOnChange: (value) => {
+        if (formState?.item) return {};
+
+        const selectedSecteur = secteurs.items.find((secteur) => String(secteur.id_secteur ?? secteur.id) === String(value));
+        return { police: generateContractNumber(selectedSecteur, items) };
+      },
     },
-  ], [secteurs.items, t]);
+  ], [defaultSecteur, formState?.item, items, secteurs.items, t]);
 
   async function saveClient(values) {
     if (formState?.item) {

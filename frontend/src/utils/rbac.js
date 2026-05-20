@@ -32,22 +32,28 @@ export const MODULE_PERMISSIONS = {
 const prod = import.meta.env.PROD;
 const LEGACY_ROLES = ['super_admin', 'admin', 'operator'];
 
+export function normalizeRole(role) {
+  return String(role ?? '').trim().toLowerCase();
+}
+
 export function isLegacyRole(role) {
-  return LEGACY_ROLES.includes(role);
+  return LEGACY_ROLES.includes(normalizeRole(role));
 }
 
 export function isKnownRole(role) {
-  return Object.values(ROLES).includes(role);
+  return Object.values(ROLES).includes(normalizeRole(role));
 }
 
 export function isDeveloperEnabled(role) {
-  return isKnownRole(role) && (role !== ROLES.DEVELOPER || !prod);
+  const normalized = normalizeRole(role);
+  return isKnownRole(normalized) && (normalized !== ROLES.DEVELOPER || !prod);
 }
 
 export function hasRole(userRole, allowedRoles = []) {
-  if (!userRole || !isDeveloperEnabled(userRole)) return false;
-  if (userRole === ROLES.DIRECTEUR) return true;
-  return allowedRoles.includes(userRole);
+  const normalized = normalizeRole(userRole);
+  if (!normalized || !isDeveloperEnabled(normalized)) return false;
+  if (normalized === ROLES.DIRECTEUR) return true;
+  return allowedRoles.includes(normalized);
 }
 
 export function hasPermission(userRole, permission) {
@@ -55,10 +61,11 @@ export function hasPermission(userRole, permission) {
 }
 
 export function isDirecteur(userRole) {
-  return userRole === ROLES.DIRECTEUR;
+  return normalizeRole(userRole) === ROLES.DIRECTEUR;
 }
 
 export function canCreate(role, resource) {
+  role = normalizeRole(role);
   if (role === ROLES.DIRECTEUR) return true;
   if (role === ROLES.DEVELOPER) return !prod;
 
@@ -75,8 +82,9 @@ export function canCreate(role, resource) {
 }
 
 export function canUpdate(role, resource) {
+  role = normalizeRole(role);
   if (role === ROLES.TECHNICIAN) {
-    return ['pannes', 'interventions'].includes(resource);
+    return ['interventions'].includes(resource);
   }
 
   if (role === ROLES.MANAGER) {
@@ -87,6 +95,7 @@ export function canUpdate(role, resource) {
 }
 
 export function canDelete(role, resource) {
+  role = normalizeRole(role);
   if (role === ROLES.DIRECTEUR) return true;
   if (role === ROLES.DEVELOPER) return !prod;
   return [ROLES.RESPONSABLE].includes(role) && ['clients', 'secteurs', 'compteurs', 'pannes', 'reparations'].includes(resource);
@@ -97,6 +106,7 @@ export function canViewReports(role) {
 }
 
 export function dashboardPathFor(role) {
+  role = normalizeRole(role);
   if (role === ROLES.DIRECTEUR) return '/administration';
   if (role === ROLES.RESPONSABLE) return '/admin/dashboard';
   if (role === ROLES.MANAGER) return '/manager/dashboard';

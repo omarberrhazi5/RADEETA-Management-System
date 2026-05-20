@@ -11,10 +11,11 @@ import {
   Wrench,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { endpoints, unwrapCollection } from '../api/resources';
 import { currentLocale, translateNotificationMessage, translateNotificationTitle } from '../utils/i18nLabels';
 import { useAuth } from '../hooks/useAuth';
-import { hasPermission } from '../utils/rbac';
+import { ROLES, hasPermission } from '../utils/rbac';
 
 function formatTime(value, t, locale) {
   if (!value) return '';
@@ -69,8 +70,65 @@ function typeMeta(type) {
   };
 }
 
+function routeForRole(role, resource) {
+  const paths = {
+    pannes: {
+      [ROLES.DIRECTEUR]: '/anomalies',
+      [ROLES.RESPONSABLE]: '/admin/pannes',
+      [ROLES.MANAGER]: '/manager/pannes',
+      [ROLES.TECHNICIAN]: '/technician/tasks',
+      [ROLES.VIEWER]: '/viewer/pannes',
+      [ROLES.DEVELOPER]: '/anomalies',
+    },
+    interventions: {
+      [ROLES.DIRECTEUR]: '/interventions',
+      [ROLES.RESPONSABLE]: '/admin/interventions',
+      [ROLES.MANAGER]: '/manager/interventions',
+      [ROLES.TECHNICIAN]: '/technician/interventions',
+      [ROLES.VIEWER]: '/viewer/interventions',
+      [ROLES.DEVELOPER]: '/interventions',
+    },
+    repairs: {
+      [ROLES.DIRECTEUR]: '/repairs',
+      [ROLES.RESPONSABLE]: '/admin/repairs',
+      [ROLES.MANAGER]: '/manager/repairs',
+      [ROLES.DEVELOPER]: '/repairs',
+    },
+  };
+
+  return paths[resource]?.[role] ?? null;
+}
+
+function notificationDestination(item, role) {
+  const type = String(item?.type ?? '');
+  const meta = item?.meta ?? {};
+
+  if (['anomaly_created', 'panne_assigned', 'pending_anomalies', 'high_priority_anomaly'].includes(type)) {
+    const path = routeForRole(role, 'pannes');
+    return path ? { path, state: { targetPanneId: meta.panne_id ?? meta.anomaly_id, sourceNotificationId: item.id } } : null;
+  }
+
+  if (['intervention_created', 'intervention_assigned', 'status_changed', 'delayed_intervention', 'progress_alert', 'priority_changed', 'technical_note'].includes(type)) {
+    const path = routeForRole(role, 'interventions');
+    return path ? { path, state: { targetInterventionId: meta.intervention_id, targetPanneId: meta.panne_id, sourceNotificationId: item.id } } : null;
+  }
+
+  if (['repair_completed', 'repair_assigned'].includes(type)) {
+    const repairPath = routeForRole(role, 'repairs');
+    if (repairPath) {
+      return { path: repairPath, state: { targetRepairId: meta.reparation_id ?? meta.repair_id, targetPanneId: meta.panne_id, sourceNotificationId: item.id } };
+    }
+
+    const interventionPath = routeForRole(role, 'interventions');
+    return interventionPath ? { path: interventionPath, state: { targetPanneId: meta.panne_id, sourceNotificationId: item.id } } : null;
+  }
+
+  return null;
+}
+
 export default function NotificationBell() {
   const { i18n, t } = useTranslation();
+  const navigate = useNavigate();
   const { role } = useAuth();
   const dropdownRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -129,6 +187,26 @@ export default function NotificationBell() {
       setError(err.response?.data?.message ?? t('notifications.updateFailed'));
     } finally {
       setMarking(false);
+    }
+  }
+
+  async function openNotification(item) {
+    const destination = notificationDestination(item, role);
+
+    setOpen(false);
+    setItems((current) => current.map((notification) => (notification.id === item.id ? { ...notification, is_read: true } : notification)));
+    if (!item.is_read) {
+      setUnreadCount((current) => Math.max(0, current - 1));
+      endpoints.markNotificationRead(item.id)
+        .then((response) => setUnreadCount(response.data?.unread_count ?? 0))
+        .catch((err) => {
+          setError(err.response?.data?.message ?? t('notifications.updateFailed'));
+          load();
+        });
+    }
+
+    if (destination) {
+      navigate(destination.path, { state: destination.state });
     }
   }
 
@@ -194,8 +272,8 @@ export default function NotificationBell() {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => !item.is_read && markAsRead([item.id])}
-                    className={`group flex w-full gap-3 rounded-2xl px-3 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm ${item.is_read ? 'bg-white' : 'bg-[var(--srm-green-soft)]'}`}
+                    onClick={() => openNotification(item)}
+                    className={`group flex w-full cursor-pointer gap-3 rounded-2xl px-3 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm ${item.is_read ? 'bg-white' : 'bg-[var(--srm-green-soft)]'}`}
                   >
                     <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${meta.avatar}`}>
                       <Icon size={18} strokeWidth={1.5} />

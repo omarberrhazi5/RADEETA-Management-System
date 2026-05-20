@@ -13,9 +13,10 @@ class ClientFactory extends Factory
     public function definition(): array
     {
         return [
-            'police' => '000'.$this->faker->unique()->numerify('#######'),
+            'police' => $this->faker->unique()->numerify('#########'),
             'nom' => fake()->lastName(),
             'prenom' => fake()->firstName(),
+            'cin' => fake()->unique()->bothify('??######'),
             'telephone' => fake()->numerify('06########'),
             'adresse' => fake()->randomElement([
                 'Qods, Taza',
@@ -26,7 +27,7 @@ class ClientFactory extends Factory
                 'Bab Jamaa, Taza',
                 'Hay Massira, Taza',
             ]),
-            'type_abonnement' => fake()->randomElement(['domestic', 'commercial', 'industrial']),
+            'type_abonnement' => fake()->randomElement(['Domestique', 'Patente', 'Administration']),
             'service_type' => fake()->randomElement(['water', 'electricity']),
             'abonne' => fake()->boolean(90),
         ];

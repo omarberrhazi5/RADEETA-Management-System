@@ -17,7 +17,8 @@ return new class extends Migration
             $table->string('num_contrat')->nullable();
             $table->string('num_tournee')->nullable();
             $table->string('usage')->nullable();
-            $table->enum('calibre', ['15', '20']);
+            $table->string('calibre');
+            $table->string('technical_type')->nullable();
             $table->string('marque')->nullable();
             $table->enum('service_type', ['water', 'electricity'])->default('water');
             $table->decimal('index_releve', 10, 2)->default(0);

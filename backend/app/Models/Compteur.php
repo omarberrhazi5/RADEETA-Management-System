@@ -18,6 +18,7 @@ class Compteur extends Model
         'num_tournee',
         'usage',
         'calibre',
+        'technical_type',
         'marque',
         'service_type',
         'index_releve',

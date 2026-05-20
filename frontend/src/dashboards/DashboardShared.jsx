@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Activity, AlertTriangle, ClipboardCheck, Droplets, Map, ShieldAlert, Users, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, ClipboardCheck, Droplets, Gauge, Map, ShieldAlert, UserCheck, Users, Zap } from 'lucide-react';
 import { endpoints } from '../api/resources';
 import DashboardCharts from '../components/DashboardCharts';
 import PanneMap from '../components/PanneMap';
@@ -28,12 +28,16 @@ export function StatsGrid({ stats }) {
     <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard label={t('dashboard.totalClients')} value={stats?.total_clients ?? '-'} sub={t('dashboard.registeredCustomers')} icon={Users} color="blue" />
       <StatCard label={t('dashboard.openClaims')} value={stats?.pannes_ouvertes ?? stats?.active_pannes ?? '-'} sub={t('dashboard.pendingPannes')} icon={AlertTriangle} color="red" />
-      <StatCard label={t('dashboard.interventions')} value={stats?.total_interventions ?? '-'} sub={`${stats?.interventions_mois ?? '-'} ${t('dashboard.thisMonth')}`} icon={ClipboardCheck} color="green" />
-      <StatCard label={t('dashboard.activeInterventions')} value={stats?.active_interventions ?? '-'} sub={`${stats?.completed_interventions ?? '-'} ${t('dashboard.completed')}`} icon={Activity} color="amber" />
+      <StatCard label={t('dashboard.interventions')} value={stats?.total_interventions ?? '-'} sub={t('dashboard.thisMonth')} icon={ClipboardCheck} color="green" />
+      <StatCard label={t('dashboard.activeInterventions')} value={stats?.active_interventions ?? '-'} sub={t('dashboard.inProgressAssigned')} icon={Activity} color="amber" />
       <StatCard label={t('dashboard.urgentInterventions')} value={stats?.urgent_interventions ?? '-'} sub={t('dashboard.highPriorityFieldWork')} icon={ShieldAlert} color="red" />
-      <StatCard label={t('dashboard.waterClaims')} value={stats?.water_pannes ?? '-'} sub={`${stats?.water_clients ?? '-'} ${t('dashboard.waterClients')}`} icon={Droplets} color="blue" />
-      <StatCard label={t('dashboard.electricityClaims')} value={stats?.electricity_pannes ?? '-'} sub={`${stats?.electricity_clients ?? '-'} ${t('dashboard.electricityClients')}`} icon={Zap} color="amber" />
+      <StatCard label={t('dashboard.waterClaims')} value={stats?.water_pannes ?? '-'} sub={t('dashboard.waterSector')} icon={Droplets} color="blue" />
+      <StatCard label={t('dashboard.electricityClaims')} value={stats?.electricity_pannes ?? '-'} sub={t('dashboard.electricitySector')} icon={Zap} color="amber" />
       <StatCard label={t('dashboard.sectors')} value={stats?.total_secteurs ?? '-'} sub={t('dashboard.agencyCoverage')} icon={Map} color="blue" />
+      <StatCard label={t('dashboard.totalMeters')} value={stats?.total_compteurs ?? '-'} sub={t('dashboard.meterFleet')} icon={Gauge} color="green" />
+      <StatCard label={t('dashboard.waterMeters')} value={stats?.water_compteurs ?? '-'} sub={t('dashboard.waterSubscribers')} icon={Droplets} color="blue" />
+      <StatCard label={t('dashboard.electricityMeters')} value={stats?.electricity_compteurs ?? '-'} sub={t('dashboard.electricitySubscribers')} icon={Zap} color="amber" />
+      <StatCard label={t('dashboard.usersTechnicians')} value={`${stats?.total_users ?? '-'} / ${stats?.total_technicians ?? '-'}`} sub={t('dashboard.activeAccounts')} icon={UserCheck} color="blue" />
     </div>
   );
 }
@@ -74,7 +78,7 @@ export function DashboardFrame({ title, subtitle, stats, pannes, secteurs, inter
         <p className="mt-1 text-sm font-medium text-slate-500">{subtitle}</p>
       </div>
       {error && <ErrorState message={error} />}
-      {loading ? <SkeletonGrid cards={6} /> : stats && <StatsGrid stats={stats} />}
+      {loading ? <SkeletonGrid cards={12} /> : stats && <StatsGrid stats={stats} />}
       {showCharts && (
         <DashboardCharts pannes={pannes} interventions={interventions} loading={loading} />
       )}

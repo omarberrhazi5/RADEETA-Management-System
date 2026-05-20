@@ -6,6 +6,7 @@ use App\Enums\PanneAnomalie;
 use App\Enums\PanneStatus;
 use App\Enums\UserRole;
 use App\Http\Resources\PanneResource;
+use App\Models\Compteur;
 use App\Models\Intervention;
 use App\Models\Panne;
 use App\Services\NotificationService;
@@ -60,12 +61,13 @@ class PanneController extends Controller
 
     public function store(Request $request, NotificationService $notifications): JsonResponse
     {
+        $this->forbidManagerRole($request);
         $this->normalizeFrontendPayload($request);
 
         $validated = $request->validate([
             'id_compteur' => ['required', Rule::exists('compteurs', 'id')->whereNull('deleted_at')],
             'date_panne' => ['required', 'date'],
-            'anomalie' => ['required', Rule::enum(PanneAnomalie::class)],
+            'anomalie' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
             'assigned_to' => ['nullable', Rule::exists('users', 'id')->where('role', UserRole::Technician->value)],
@@ -76,15 +78,15 @@ class PanneController extends Controller
             $validated['assigned_to'] = $request->user()->id;
         }
 
+        $this->validateAnomalyMatchesMeter($validated['id_compteur'], $validated['anomalie']);
+
         $priority = $this->interventionPriority($validated);
         unset($validated['priority']);
 
         $panne = DB::transaction(function () use ($validated, $priority): Panne {
             $panne = Panne::create($validated);
 
-            if ($panne->assigned_to) {
-                $this->ensureAssignedIntervention($panne, $priority);
-            }
+            $this->ensureAssignedIntervention($panne, $priority);
 
             return $panne;
         });
@@ -108,12 +110,13 @@ class PanneController extends Controller
 
     public function update(Request $request, Panne $panne, NotificationService $notifications): JsonResponse
     {
+        $this->forbidMonitoringRole($request);
         $this->normalizeFrontendPayload($request);
 
         $validated = $request->validate([
             'id_compteur' => ['sometimes', 'required', Rule::exists('compteurs', 'id')->whereNull('deleted_at')],
             'date_panne' => ['sometimes', 'required', 'date'],
-            'anomalie' => ['sometimes', 'required', Rule::enum(PanneAnomalie::class)],
+            'anomalie' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['sometimes', Rule::enum(PanneStatus::class)],
             'assigned_to' => ['sometimes', 'nullable', Rule::exists('users', 'id')->where('role', UserRole::Technician->value)],
@@ -128,6 +131,13 @@ class PanneController extends Controller
             $validated = array_intersect_key($validated, array_flip(['status', 'assigned_to', 'priority']));
         }
 
+        if (array_key_exists('id_compteur', $validated) || array_key_exists('anomalie', $validated)) {
+            $this->validateAnomalyMatchesMeter(
+                $validated['id_compteur'] ?? $panne->id_compteur,
+                $validated['anomalie'] ?? $panne->anomalie,
+            );
+        }
+
         $oldAssignedTo = $panne->assigned_to;
         $priority = $this->interventionPriority($validated, $panne);
         unset($validated['priority']);
@@ -135,7 +145,7 @@ class PanneController extends Controller
         DB::transaction(function () use ($panne, $validated, $priority): void {
             $panne->update($validated);
 
-            if ($panne->assigned_to) {
+            if (array_key_exists('assigned_to', $validated) || ! $panne->interventions()->exists()) {
                 $this->ensureAssignedIntervention($panne, $priority);
             }
         });
@@ -147,8 +157,10 @@ class PanneController extends Controller
         return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')))->response();
     }
 
-    public function destroy(Panne $panne): JsonResponse
+    public function destroy(Request $request, Panne $panne): JsonResponse
     {
+        $this->forbidMonitoringRole($request);
+
         $panne->delete();
 
         return response()->json(null, 204);
@@ -199,6 +211,39 @@ class PanneController extends Controller
         }
     }
 
+    private function validateAnomalyMatchesMeter(int|string $compteurId, PanneAnomalie|string $anomalie): void
+    {
+        $meter = Compteur::withTrashed()->find($compteurId);
+        $value = $anomalie instanceof PanneAnomalie ? $anomalie->value : $anomalie;
+
+        if (! PanneAnomalie::tryFrom((string) $value)) {
+            return;
+        }
+
+        $allowed = match ($meter?->service_type) {
+            'water' => [
+                PanneAnomalie::FuiteAvantCompteur->value,
+                PanneAnomalie::FuiteApresCompteur->value,
+                PanneAnomalie::CompteurBloque->value,
+                PanneAnomalie::PressionFaible->value,
+                PanneAnomalie::RobinetDefectueux->value,
+            ],
+            'electricity' => [
+                PanneAnomalie::CoupureElectricite->value,
+                PanneAnomalie::TensionInstable->value,
+                PanneAnomalie::CompteurCasse->value,
+                PanneAnomalie::CompteurInverse->value,
+                PanneAnomalie::CadranIllisible->value,
+                PanneAnomalie::AbsenceCompteur->value,
+                PanneAnomalie::BranchementIllicite->value,
+                PanneAnomalie::PlombRompu->value,
+            ],
+            default => [],
+        };
+
+        abort_unless(in_array($value, $allowed, true), 422, 'The selected anomaly does not match the meter type.');
+    }
+
     private function isOperator(Request $request): bool
     {
         $role = $request->user()?->role;
@@ -213,6 +258,28 @@ class PanneController extends Controller
         $value = $role instanceof UserRole ? $role->value : $role;
 
         return $value === UserRole::Manager->value;
+    }
+
+    private function forbidMonitoringRole(Request $request): void
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        abort_if(
+            in_array($value, [UserRole::Responsable->value, UserRole::Manager->value], true),
+            response()->json(['message' => 'Action non autorisée'], 403)
+        );
+    }
+
+    private function forbidManagerRole(Request $request): void
+    {
+        $role = $request->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        abort_if(
+            $value === UserRole::Manager->value,
+            response()->json(['message' => 'Action non autorisée'], 403)
+        );
     }
 
     private function authorizeOperatorPanneAccess(Request $request, Panne $panne): void
@@ -244,7 +311,9 @@ class PanneController extends Controller
     {
         return match ($status) {
             PanneStatus::Resolved->value, 'réparé', 'repare', 'répare', 'reparee', 'réparée', 'résolue', 'resolue' => PanneStatus::Resolved->value,
-            PanneStatus::Open->value, 'ouvert', 'ouverte' => PanneStatus::Open->value,
+            PanneStatus::Assigned->value, 'assigné', 'assignée', 'assigne', 'assignee' => PanneStatus::Assigned->value,
+            PanneStatus::InProgress->value, 'en cours', 'en_cours' => PanneStatus::InProgress->value,
+            PanneStatus::Open->value, 'nouvelle', 'ouvert', 'ouverte' => PanneStatus::Open->value,
             default => $status,
         };
     }

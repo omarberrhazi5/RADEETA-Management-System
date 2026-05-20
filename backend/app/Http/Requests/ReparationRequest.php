@@ -7,6 +7,7 @@ use App\Models\Panne;
 use App\Models\Reparation;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -14,6 +15,10 @@ class ReparationRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        if ($this->isMonitoringRole()) {
+            return false;
+        }
+
         if (! $this->isOperator()) {
             return true;
         }
@@ -24,6 +29,13 @@ class ReparationRequest extends FormRequest
         return $panneId
             ? Panne::whereKey($panneId)->where('assigned_to', $this->user()->id)->exists()
             : true;
+    }
+
+    protected function failedAuthorization(): void
+    {
+        throw new HttpResponseException(
+            response()->json(['message' => 'Action non autorisée'], 403)
+        );
     }
 
     protected function prepareForValidation(): void
@@ -121,5 +133,13 @@ class ReparationRequest extends FormRequest
         $value = $role instanceof UserRole ? $role->value : $role;
 
         return $value === UserRole::Technician->value;
+    }
+
+    private function isMonitoringRole(): bool
+    {
+        $role = $this->user()?->role;
+        $value = $role instanceof UserRole ? $role->value : $role;
+
+        return in_array($value, [UserRole::Responsable->value, UserRole::Manager->value], true);
     }
 }

@@ -32,13 +32,13 @@ class ClientController extends Controller
         ]);
 
         $validated = $request->validate([
-            'police' => ['required', 'string', 'max:255', Rule::unique('clients', 'police')],
+            'police' => ['required', 'digits:9', Rule::unique('clients', 'police')],
             'nom' => ['required', 'string', 'max:255'],
             'prenom' => ['nullable', 'string', 'max:255'],
-            'cin' => ['nullable', 'string', 'max:20'],
+            'cin' => ['required', 'string', 'max:20', Rule::unique('clients', 'cin')],
             'telephone' => ['nullable', 'string', 'max:255'],
             'adresse' => ['required', 'string', 'max:255'],
-            'type_abonnement' => ['required', Rule::in(['domestic', 'commercial', 'industrial'])],
+            'type_abonnement' => ['required', Rule::in(['Domestique', 'Patente', 'Administration'])],
             'service_type' => ['required', Rule::in(['water', 'electricity'])],
             'id_secteur' => ['required', 'integer', Rule::exists('secteurs', 'id')],
             'abonne' => ['sometimes', 'boolean'],
@@ -74,13 +74,13 @@ class ClientController extends Controller
         }
 
         $validated = $request->validate([
-            'police' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('clients', 'police')->ignore($client)],
+            'police' => ['sometimes', 'required', 'digits:9', Rule::unique('clients', 'police')->ignore($client)],
             'nom' => ['sometimes', 'required', 'string', 'max:255'],
             'prenom' => ['nullable', 'string', 'max:255'],
-            'cin' => ['nullable', 'string', 'max:20'],
+            'cin' => ['sometimes', 'required', 'string', 'max:20', Rule::unique('clients', 'cin')->ignore($client)],
             'telephone' => ['nullable', 'string', 'max:255'],
             'adresse' => ['sometimes', 'required', 'string', 'max:255'],
-            'type_abonnement' => ['sometimes', 'required', Rule::in(['domestic', 'commercial', 'industrial'])],
+            'type_abonnement' => ['sometimes', 'required', Rule::in(['Domestique', 'Patente', 'Administration'])],
             'service_type' => ['sometimes', 'required', Rule::in(['water', 'electricity'])],
             'id_secteur' => ['sometimes', 'required', 'integer', Rule::exists('secteurs', 'id')],
             'abonne' => ['sometimes', 'boolean'],
@@ -115,4 +115,5 @@ class ClientController extends Controller
 
         abort_unless($belongsToAgency, 422, 'The selected sector does not belong to your agency.');
     }
+
 }

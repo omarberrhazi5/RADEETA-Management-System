@@ -108,38 +108,27 @@ class RbacApiTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_technician_can_update_only_assigned_repairs(): void
+    public function test_technician_cannot_access_repairs(): void
     {
         $technician = User::factory()->create(['role' => UserRole::Technician]);
         $otherTechnician = User::factory()->create(['role' => UserRole::Technician]);
         $assignedPanne = Panne::factory()->create(['assigned_to' => $technician->id]);
         $otherPanne = Panne::factory()->create(['assigned_to' => $otherTechnician->id]);
-        $assignedRepair = Reparation::factory()->create([
+        Reparation::factory()->create([
             'id_panne' => $assignedPanne->id,
             'id_plombier' => $technician->id,
             'date_reparation' => $assignedPanne->date_panne->toDateString(),
             'description' => 'Initial repair progress.',
         ]);
-        $otherRepair = Reparation::factory()->create([
+        Reparation::factory()->create([
             'id_panne' => $otherPanne->id,
             'id_plombier' => $otherTechnician->id,
         ]);
 
         Sanctum::actingAs($technician);
 
-        $this->getJson('/api/reparations')->assertOk()->assertJsonCount(1, 'data');
-        $this->putJson("/api/reparations/{$assignedRepair->id}", [
-            'description' => 'Updated field repair progress.',
-            'id_panne' => $otherPanne->id,
-        ])->assertOk();
-
-        $this->assertDatabaseHas('reparations', [
-            'id' => $assignedRepair->id,
-            'id_panne' => $assignedPanne->id,
-            'description' => 'Updated field repair progress.',
-        ]);
-
-        $this->putJson("/api/reparations/{$otherRepair->id}", [
+        $this->getJson('/api/reparations')->assertForbidden();
+        $this->putJson('/api/reparations/1', [
             'description' => 'Unauthorized update.',
         ])->assertForbidden();
     }
@@ -166,7 +155,7 @@ class RbacApiTest extends TestCase
         $completeMeter = Compteur::factory()->create([
             'num_contrat' => 'CTR-900001',
             'num_tournee' => 'TR-042',
-            'usage' => 'commercial',
+            'usage' => 'Patente',
         ]);
         $legacyMeter = Compteur::factory()->create([
             'num_contrat' => null,
@@ -180,7 +169,7 @@ class RbacApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.num_contrat', 'CTR-900001')
             ->assertJsonPath('data.num_tournee', 'TR-042')
-            ->assertJsonPath('data.usage', 'commercial');
+            ->assertJsonPath('data.usage', 'Patente');
 
         $this->getJson("/api/compteurs/{$legacyMeter->id}")
             ->assertOk()
@@ -309,7 +298,7 @@ class RbacApiTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $managed->id]);
     }
 
-    public function test_directeur_and_responsable_can_create_repairs(): void
+    public function test_directeur_can_create_repairs_and_responsable_is_read_only(): void
     {
         $operator = User::factory()->create(['role' => UserRole::Technician]);
         $directeurPanne = Panne::factory()->create();
@@ -329,7 +318,8 @@ class RbacApiTest extends TestCase
             'id_plombier' => $operator->id,
             'date_reparation' => $responsablePanne->date_panne->toDateString(),
             'description' => 'Repair created by responsable.',
-        ])->assertCreated();
+        ])->assertForbidden()
+            ->assertJsonPath('message', 'Action non autorisée');
     }
 
     public function test_responsable_and_manager_can_access_reports(): void
@@ -350,7 +340,7 @@ class RbacApiTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_manager_can_supervise_but_cannot_create_or_delete_operational_records(): void
+    public function test_manager_can_supervise_and_create_interventions_but_cannot_modify_audit_records(): void
     {
         $manager = User::factory()->create(['role' => UserRole::Manager]);
         $operator = User::factory()->create(['role' => UserRole::Technician]);
@@ -372,13 +362,15 @@ class RbacApiTest extends TestCase
             'id_compteur' => Compteur::factory()->create()->id,
             'date_panne' => now()->toDateString(),
             'anomalie' => 'compteur_bloque',
-        ])->assertForbidden();
+        ])->assertForbidden()
+            ->assertJsonPath('message', 'Action non autorisée');
         $this->postJson('/api/reparations', [
             'id_panne' => $panne->id,
             'id_plombier' => $operator->id,
             'date_reparation' => $panne->date_panne->toDateString(),
             'description' => 'Manager should not create repairs.',
-        ])->assertForbidden();
+        ])->assertForbidden()
+            ->assertJsonPath('message', 'Action non autorisée');
         $this->postJson('/api/interventions', [
             'panne_id' => $panne->id,
             'technician_id' => $operator->id,
@@ -386,17 +378,86 @@ class RbacApiTest extends TestCase
             'work_type' => 'inspection',
             'priority' => 'normal',
             'status' => 'en_cours',
-        ])->assertForbidden();
+        ])->assertCreated();
         $this->putJson("/api/interventions/{$intervention->id}", [
             'status' => 'en_cours',
             'work_type' => 'manager should not change this',
-        ])->assertOk();
+        ])->assertForbidden()
+            ->assertJsonPath('message', 'Action non autorisée');
         $this->assertDatabaseHas('interventions', [
             'id' => $intervention->id,
-            'status' => 'en_cours',
+            'status' => 'en_attente',
             'work_type' => 'inspection',
         ]);
-        $this->deleteJson("/api/interventions/{$intervention->id}")->assertForbidden();
+        $this->deleteJson("/api/interventions/{$intervention->id}")
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Action non autorisée');
+    }
+
+    public function test_monitoring_roles_cannot_update_or_delete_audit_records(): void
+    {
+        $technician = User::factory()->create(['role' => UserRole::Technician]);
+        $panne = Panne::factory()->create(['assigned_to' => $technician->id]);
+        $repair = Reparation::factory()->create([
+            'id_panne' => $panne->id,
+            'id_plombier' => $technician->id,
+            'date_reparation' => $panne->date_panne->toDateString(),
+        ]);
+        $intervention = Intervention::create([
+            'panne_id' => $panne->id,
+            'technician_id' => $technician->id,
+            'started_at' => now(),
+            'work_type' => 'inspection',
+            'priority' => 'normal',
+            'status' => 'en_attente',
+        ]);
+
+        foreach ([UserRole::Responsable, UserRole::Manager] as $role) {
+            Sanctum::actingAs(User::factory()->create(['role' => $role]));
+
+            $createAnomalyResponse = $this->postJson('/api/pannes', [
+                'id_compteur' => Compteur::factory()->create(['service_type' => 'water'])->id,
+                'date_panne' => now()->toDateString(),
+                'anomalie' => 'compteur_bloque',
+            ]);
+
+            if ($role === UserRole::Responsable) {
+                $createAnomalyResponse->assertCreated();
+            } else {
+                $createAnomalyResponse
+                    ->assertForbidden()
+                    ->assertJsonPath('message', 'Action non autorisée');
+            }
+
+            $this->putJson("/api/pannes/{$panne->id}", ['status' => PanneStatus::Resolved->value])
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+            $this->deleteJson("/api/pannes/{$panne->id}")
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+
+            $this->postJson('/api/reparations', [
+                'id_panne' => $panne->id,
+                'id_plombier' => $technician->id,
+                'date_reparation' => $panne->date_panne->toDateString(),
+                'description' => 'Tamper attempt',
+            ])
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+            $this->putJson("/api/reparations/{$repair->id}", ['description' => 'Tamper attempt'])
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+            $this->deleteJson("/api/reparations/{$repair->id}")
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+
+            $this->putJson("/api/interventions/{$intervention->id}", ['status' => 'en_cours'])
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+            $this->deleteJson("/api/interventions/{$intervention->id}")
+                ->assertForbidden()
+                ->assertJsonPath('message', 'Action non autorisée');
+        }
     }
 
     public function test_technician_can_update_only_assigned_interventions(): void
@@ -437,19 +498,31 @@ class RbacApiTest extends TestCase
             'status' => 'terminee',
             'material_used' => "Joint\nCable",
             'observations' => 'Technical report completed.',
+            'latitude' => '34.211100',
+            'longitude' => '-4.011100',
+            'location_note' => 'Pres du compteur principal',
             'work_type' => 'should be ignored',
         ])->assertOk()
-            ->assertJsonPath('data.status', 'terminee');
+            ->assertJsonPath('data.status', 'terminee')
+            ->assertJsonPath('data.latitude', '34.211100')
+            ->assertJsonPath('data.longitude', '-4.011100')
+            ->assertJsonPath('data.location_note', 'Pres du compteur principal');
 
         $this->assertDatabaseHas('interventions', [
             'id' => $assignedIntervention->id,
             'status' => 'terminee',
             'work_type' => 'repair',
+            'latitude' => '34.211100',
+            'longitude' => '-4.011100',
+            'location_note' => 'Pres du compteur principal',
         ]);
         $this->assertDatabaseHas('reparations', [
             'id_panne' => $assignedPanne->id,
             'id_plombier' => $technician->id,
             'description' => 'Technical report completed.',
+            'latitude' => '34.211100',
+            'longitude' => '-4.011100',
+            'location_note' => 'Pres du compteur principal',
         ]);
         $this->assertDatabaseHas('pannes', [
             'id' => $assignedPanne->id,
@@ -463,11 +536,11 @@ class RbacApiTest extends TestCase
 
     public function test_assigned_anomaly_creates_pending_intervention(): void
     {
-        $responsable = User::factory()->create(['role' => UserRole::Responsable]);
+        $directeur = User::factory()->create(['role' => UserRole::Directeur]);
         $technician = User::factory()->create(['role' => UserRole::Technician]);
-        $compteur = Compteur::factory()->create();
+        $compteur = Compteur::factory()->create(['service_type' => 'water']);
 
-        Sanctum::actingAs($responsable);
+        Sanctum::actingAs($directeur);
 
         $response = $this->postJson('/api/pannes', [
             'id_compteur' => $compteur->id,

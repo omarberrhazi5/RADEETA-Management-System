@@ -23,7 +23,7 @@ class InterventionPolicy
     public function view(User $user, Intervention $intervention): bool
     {
         return $this->viewAny($user)
-            && ($this->role($user) !== UserRole::Technician->value || (int) $intervention->technician_id === (int) $user->id);
+            && ($this->role($user) !== UserRole::Technician->value || $intervention->technician_id === null || (int) $intervention->technician_id === (int) $user->id);
     }
 
     public function create(User $user): bool
@@ -31,6 +31,7 @@ class InterventionPolicy
         return in_array($this->role($user), [
             UserRole::Directeur->value,
             UserRole::Responsable->value,
+            UserRole::Manager->value,
             UserRole::Developer->value,
         ], true);
     }
@@ -43,8 +44,6 @@ class InterventionPolicy
 
         return in_array($this->role($user), [
             UserRole::Directeur->value,
-            UserRole::Responsable->value,
-            UserRole::Manager->value,
             UserRole::Developer->value,
         ], true);
     }

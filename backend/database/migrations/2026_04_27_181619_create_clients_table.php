@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('cin', 20)->nullable()->index();
             $table->string('telephone')->nullable();
             $table->string('adresse')->nullable();
-            $table->enum('type_abonnement', ['domestic', 'commercial', 'industrial'])->default('domestic');
+            $table->enum('type_abonnement', ['Domestique', 'Patente', 'Administration'])->default('Domestique');
             $table->enum('service_type', ['water', 'electricity'])->default('water');
             $table->foreignId('id_secteur')->nullable()->constrained('secteurs')->nullOnDelete();
             $table->boolean('abonne')->default(true);

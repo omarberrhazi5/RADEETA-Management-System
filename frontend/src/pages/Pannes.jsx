@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Droplets, Home, MapPinned, Phone, Tags, Zap } from 'lucide-react';
 import api from '../api/axios';
 import { endpoints } from '../api/resources';
 import DataTable from '../components/DataTable';
@@ -15,35 +15,66 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 import { translateAnomaly, translateStatus } from '../utils/i18nLabels';
 import { ROLES, canCreate } from '../utils/rbac';
+import { errorText, fieldError, focusFirstInvalid, normalizeApiErrors } from '../utils/formValidation';
 
 function statusColor(status) {
   const value = String(status ?? '').toLowerCase();
   if (['repare', 'reparee', 'resolu', 'resolue', 'resolved'].includes(value)) return 'green';
+  if (['assigned', 'assignee', 'assignée'].includes(value)) return 'blue';
   if (['en cours', 'in_progress'].includes(value)) return 'amber';
   return 'red';
 }
 
 const anomalyCategories = [
-  { value: 'blocked_meter', label: 'Blocked Meter', anomalie: 'compteur_bloque' },
-  { value: 'leakage', label: 'Leakage', anomalie: 'fuite_apres_compteur' },
-  { value: 'technical_damage', label: 'Technical Damage', anomalie: 'compteur_casse' },
-  { value: 'illegal_connection', label: 'Illegal Connection', anomalie: 'branchement_illicite' },
-  { value: 'other', label: 'Other', anomalie: 'robinet_defectueux' },
+  { value: 'water_leak', serviceType: 'water', label: 'Fuite', anomalie: 'fuite_avant_compteur' },
+  { value: 'water_after_meter_leak', serviceType: 'water', label: 'Fuite après compteur', anomalie: 'fuite_apres_compteur' },
+  { value: 'water_blocked_meter', serviceType: 'water', label: 'Blocage', anomalie: 'compteur_bloque' },
+  { value: 'water_pressure', serviceType: 'water', label: 'Pression', anomalie: 'pression_faible' },
+  { value: 'electricity_outage', serviceType: 'electricity', label: 'Coupure', anomalie: 'coupure_electricite' },
+  { value: 'electricity_voltage', serviceType: 'electricity', label: 'Tension', anomalie: 'tension_instable' },
+  { value: 'electricity_damaged_meter', serviceType: 'electricity', label: 'Compteur endommagé', anomalie: 'compteur_casse' },
+  { value: 'electricity_illegal_connection', serviceType: 'electricity', label: 'Branchement illicite', anomalie: 'branchement_illicite' },
 ];
+
+const otherAnomalyValue = 'other';
+
+const meterTypeOptions = [
+  { value: 'water', label: "Compteur d'eau", icon: Droplets, color: 'blue' },
+  { value: 'electricity', label: "Compteur d'électricité", icon: Zap, color: 'amber' },
+];
+
+function expectedMeterPrefix(serviceType) {
+  if (serviceType === 'water') return 'SN-EAU-';
+  if (serviceType === 'electricity') return 'SN-ELE-';
+  return '';
+}
+
+function meterMatchesService(meter, serviceType) {
+  if (!serviceType) return false;
+
+  const serial = String(meter.cadran ?? '').toUpperCase();
+  const prefix = expectedMeterPrefix(serviceType);
+
+  return meter.service_type === serviceType || (prefix && serial.startsWith(prefix));
+}
 
 export default function Pannes() {
   const { t } = useTranslation();
+  const location = useLocation();
   const navigate = useNavigate();
   const { role } = useAuth();
   const { error, items, loading, refresh } = useResource(endpoints.pannes, { limit: 500, sort: 'recent' });
   const compteurs = useResource(endpoints.compteurs, { limit: 500 }, { enabled: ![ROLES.TECHNICIAN, ROLES.MANAGER].includes(role) });
   const secteurs = useResource(endpoints.secteurs, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN });
   const technicians = useResource(endpoints.technicians, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN });
-  const canCreateRepair = canCreate(role, 'reparations');
+  const isMonitoringRole = [ROLES.RESPONSABLE, ROLES.MANAGER].includes(role);
+  const canCreateAnomaly = role === ROLES.RESPONSABLE || canCreate(role, 'pannes');
+  const canDispatchIntervention = isMonitoringRole || canCreate(role, 'interventions');
   const [formState, setFormState] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [filters, setFilters] = useState({ status: '', secteur: '', assigned: '' });
+  const targetPanneId = location.state?.targetPanneId ?? location.state?.targetAnomalyId ?? null;
 
   const fields = useMemo(() => [
     ...([ROLES.TECHNICIAN, ROLES.MANAGER].includes(role) ? [] : [
@@ -127,13 +158,14 @@ export default function Pannes() {
     const matchesStatus = !filters.status || status.includes(filters.status);
     const matchesSector = !filters.secteur || String(item.compteur?.secteur?.id ?? item.compteur?.secteur?.id_secteur ?? '') === filters.secteur;
     const matchesAssigned = !filters.assigned || String(item.assigned_to ?? '') === filters.assigned;
-    return matchesStatus && matchesSector && matchesAssigned;
+    const matchesTarget = !targetPanneId || String(item.id_panne ?? item.id) === String(targetPanneId);
+    return matchesStatus && matchesSector && matchesAssigned && matchesTarget;
   });
 
-  function repairsPathForRole() {
-    if (role === ROLES.DIRECTEUR || role === ROLES.RESPONSABLE) return '/admin/repairs';
-    if (role === ROLES.MANAGER) return '/manager/repairs';
-    if (role === ROLES.TECHNICIAN) return '/technician/repairs';
+  function interventionsPathForRole() {
+    if (role === ROLES.DIRECTEUR || role === ROLES.RESPONSABLE) return '/admin/interventions';
+    if (role === ROLES.MANAGER) return '/manager/interventions';
+    if (role === ROLES.TECHNICIAN) return '/technician/interventions';
     return '/access-denied';
   }
 
@@ -152,6 +184,8 @@ export default function Pannes() {
             <select value={filters.status} onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))} className="h-11 rounded-md border border-gray-300 px-3 text-sm">
               <option value="">{t('common.allStatuses')}</option>
               <option value="open">{t('statuses.open')}</option>
+              <option value="assigned">{t('statuses.assigned')}</option>
+              <option value="in_progress">{t('statuses.in_progress')}</option>
               <option value="resolved">{t('statuses.resolved')}</option>
             </select>
             {role !== ROLES.TECHNICIAN && (
@@ -169,9 +203,12 @@ export default function Pannes() {
           </>
         )}
         emptyMessage={t('pannes.empty')}
-        onCreate={() => setFormState({ item: null, mode: 'create' })}
-        onEdit={(item) => setFormState({ item })}
-        onDelete={setDeleteTarget}
+        onCreate={canCreateAnomaly ? () => setFormState({ item: null, mode: 'create' }) : undefined}
+        onEdit={isMonitoringRole ? undefined : (item) => setFormState({ item })}
+        onDelete={isMonitoringRole ? undefined : setDeleteTarget}
+        allowCreate={canCreateAnomaly}
+        allowEdit={isMonitoringRole ? false : undefined}
+        allowDelete={isMonitoringRole ? false : undefined}
         columns={[
           { key: 'service_type', header: t('tables.service'), render: (row) => {
             const serviceType = row.compteur?.service_type ?? row.service_type ?? 'water';
@@ -189,11 +226,11 @@ export default function Pannes() {
             const value = String(row.statut ?? row.status ?? 'open').toLowerCase();
             return <Badge label={translateStatus(t, value)} color={statusColor(value)} />;
           } },
-          ...(canCreateRepair ? [{
+          ...(canDispatchIntervention ? [{
             key: 'repair',
             header: t('tables.intervention'),
             render: (row) => (
-              <button type="button" onClick={() => navigate(repairsPathForRole(), { state: { panne: row } })} className="text-xs font-semibold text-emerald-700 hover:underline">
+              <button type="button" onClick={() => navigate(interventionsPathForRole(), { state: { panne: row } })} className="text-xs font-semibold text-emerald-700 hover:underline">
                 {t('tables.intervention')}
               </button>
             ),
@@ -234,67 +271,137 @@ function meterClientName(meter) {
   return meter?.client ? `${meter.client.nom ?? ''} ${meter.client.prenom ?? ''}`.trim() : '';
 }
 
+function MeterContextPreview({ meter }) {
+  if (!meter) return null;
+
+  const client = meter.client ?? {};
+  const sectorName = meter.secteur?.nom_secteur ?? client.secteur?.nom_secteur ?? '-';
+  const subscriptionType = client.type_abonnement ?? client.subscription_type ?? client.type_client ?? meter.usage ?? '-';
+  const items = [
+    { icon: MapPinned, label: 'Secteur', value: sectorName },
+    { icon: Phone, label: 'TÃ©lÃ©phone', value: client.telephone ?? client.phone ?? '-' },
+    { icon: Home, label: 'Adresse', value: client.adresse ?? client.address ?? '-' },
+    { icon: Tags, label: 'Abonnement', value: subscriptionType },
+  ];
+
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 text-sm text-gray-700">
+      <div className="mb-2 font-semibold text-emerald-800">
+        {meter.cadran} - {meterClientName(meter) || '-'}
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {items.map(({ icon: Icon, label, value }) => (
+          <div key={label} className="flex min-w-0 items-center gap-2">
+            <Icon size={15} className="shrink-0 text-emerald-700" />
+            <span className="min-w-0 truncate"><strong>{label}:</strong> {value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AnomalyCreateModal({ compteurs, technicians, onClose, onSubmit }) {
   const { t } = useTranslation();
+  const formRef = useRef(null);
   const [values, setValues] = useState({
+    service_type: '',
     id_compteur: '',
     date_panne: new Date().toISOString().slice(0, 10),
-    anomaly_category: 'blocked_meter',
+    anomaly_category: '',
+    custom_anomalie: '',
     description: '',
     assigned_to: '',
     status: 'open',
   });
-  const [meterQuery, setMeterQuery] = useState('');
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   const selectedMeter = compteurs.find((meter) => String(meter.id_compteur ?? meter.id) === String(values.id_compteur));
-  const filteredMeters = useMemo(() => {
-    const query = meterQuery.trim().toLowerCase();
-    if (!query) return compteurs.slice(0, 8);
-
-    return compteurs
-      .filter((meter) => [
-        meter.cadran,
-        meter.num_contrat,
-        meter.num_tournee,
-        meterClientName(meter),
-      ].join(' ').toLowerCase().includes(query))
-      .slice(0, 8);
-  }, [compteurs, meterQuery]);
+  const availableAnomalies = useMemo(
+    () => anomalyCategories.filter((item) => item.serviceType === values.service_type),
+    [values.service_type],
+  );
+  const availableMeters = useMemo(
+    () => compteurs.filter((meter) => meterMatchesService(meter, values.service_type)),
+    [compteurs, values.service_type],
+  );
+  const stepsReady = Boolean(
+    values.service_type
+    && values.anomaly_category
+    && values.id_compteur
+    && (values.anomaly_category !== otherAnomalyValue || values.custom_anomalie.trim()),
+  );
 
   function update(name, value) {
-    setValues((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+    const nextValues = {
+      ...values,
+      [name]: value,
+    };
+
+    if (name === 'service_type') {
+      nextValues.anomaly_category = '';
+      nextValues.id_compteur = '';
+      nextValues.custom_anomalie = '';
+      nextValues.description = '';
+    }
+
+    if (name === 'anomaly_category') {
+      nextValues.custom_anomalie = '';
+      nextValues.description = '';
+    }
+
+    setValues(nextValues);
+    setErrors((current) => ({ ...current, [name]: validateField(name, value), general: '' }));
+  }
+
+  function validateField(name, value = values[name]) {
+    if (name === 'service_type') return fieldError(value, { required: true, requiredMessage: 'Sélectionner le type de compteur.' }, t);
+    if (name === 'anomaly_category') return fieldError(value, { required: true, requiredMessage: "Sélectionner le type d'anomalie." }, t);
+    if (name === 'custom_anomalie') return fieldError(String(value ?? '').trim(), { required: values.anomaly_category === otherAnomalyValue, requiredMessage: "Spécifier l'anomalie." }, t);
+    if (name === 'id_compteur') return fieldError(value, { required: true }, t);
+    if (name === 'date_panne') return fieldError(value, { required: true, type: 'date' }, t);
+    return '';
   }
 
   function selectMeter(meter) {
     update('id_compteur', String(meter.id_compteur ?? meter.id));
-    setMeterQuery(meter.cadran ?? '');
   }
 
   async function submit(event) {
     event.preventDefault();
     const nextErrors = {};
-    if (!values.id_compteur) nextErrors.id_compteur = t('forms.required');
-    if (!values.date_panne) nextErrors.date_panne = t('forms.required');
-    if (values.anomaly_category === 'other' && !values.description.trim()) {
-      nextErrors.description = t('forms.required');
+    ['service_type', 'anomaly_category', 'custom_anomalie', 'id_compteur', 'date_panne'].forEach((field) => {
+      const error = validateField(field);
+      if (error) nextErrors[field] = error;
+    });
+
+    const selectedCategory = anomalyCategories.find((item) => item.value === values.anomaly_category);
+    if (values.anomaly_category !== otherAnomalyValue && selectedCategory && selectedCategory.serviceType !== values.service_type) {
+      nextErrors.anomaly_category = "Ce type d'anomalie ne correspond pas au type de compteur.";
+    }
+
+    if (selectedMeter && !meterMatchesService(selectedMeter, values.service_type)) {
+      nextErrors.id_compteur = 'Ce compteur ne correspond pas au type sélectionné.';
     }
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+      focusFirstInvalid(formRef, nextErrors);
       return;
     }
 
-    const category = anomalyCategories.find((item) => item.value === values.anomaly_category) ?? anomalyCategories[0];
+    const anomalyValue = values.anomaly_category === otherAnomalyValue
+      ? values.custom_anomalie.trim()
+      : selectedCategory?.anomalie;
+
     const payload = {
       id_compteur: values.id_compteur,
       date_panne: values.date_panne,
-      anomalie: category.anomalie,
+      anomalie: anomalyValue,
       status: values.status,
       assigned_to: values.assigned_to || null,
-      description: values.anomaly_category === 'other' ? values.description.trim() : null,
+      description: values.description.trim() || null,
     };
 
     try {
@@ -303,7 +410,7 @@ function AnomalyCreateModal({ compteurs, technicians, onClose, onSubmit }) {
       onClose();
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
-      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('forms.unableToSave') });
+      setErrors(normalizeApiErrors(apiErrors, error.response?.data?.message ?? t('forms.unableToSave')));
     } finally {
       setSaving(false);
     }
@@ -311,66 +418,119 @@ function AnomalyCreateModal({ compteurs, technicians, onClose, onSubmit }) {
 
   return (
     <Modal title={t('pannes.add')} onClose={onClose} maxWidth="max-w-2xl">
-      <form onSubmit={submit} className="space-y-4">
+      <form ref={formRef} onSubmit={submit} noValidate className="space-y-4">
         {errors.general && <div className="rounded-xl border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm font-medium text-[var(--srm-red)]">{errors.general}</div>}
 
         <div className="space-y-2">
+          <div className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-slate-600">ÉTAPE 1</div>
           <label className="block text-sm font-semibold text-slate-700">
-            {t('forms.meterId')} <span className="text-[var(--srm-red)]">*</span>
+            Type de compteur <span className="text-[var(--srm-red)]">*</span>
           </label>
-          <div className="relative">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={meterQuery}
-              onChange={(event) => {
-                setMeterQuery(event.target.value);
-                update('id_compteur', '');
-              }}
-              placeholder="SRM26..."
-              className={`w-full rounded-xl border bg-slate-50/80 py-2 pl-9 pr-3 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors.id_compteur ? 'border-[var(--srm-red)]' : 'border-slate-200'}`}
-            />
-          </div>
-          {meterQuery && !selectedMeter && (
-            <div className="max-h-44 overflow-y-auto rounded-xl border border-slate-100 bg-white shadow-[0_8px_30px_rgb(0_0_0_/_0.05)]">
-              {filteredMeters.length === 0 ? (
-                <div className="px-3 py-3 text-sm font-medium text-slate-500">{t('common.noData')}</div>
-              ) : filteredMeters.map((meter) => (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {meterTypeOptions.map((option) => {
+              const Icon = option.icon;
+              const selected = values.service_type === option.value;
+              const colorClasses = option.color === 'amber'
+                ? 'border-amber-300 bg-amber-50 text-amber-700 ring-2 ring-amber-100'
+                : 'border-blue-300 bg-blue-50 text-blue-700 ring-2 ring-blue-100';
+
+              return (
                 <button
-                  key={meter.id_compteur ?? meter.id}
+                  key={option.value}
                   type="button"
-                  onClick={() => selectMeter(meter)}
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition duration-300 hover:bg-[var(--srm-green-soft)]"
+                  name="service_type"
+                  onClick={() => update('service_type', option.value)}
+                  className={`flex min-h-20 items-center gap-3 rounded-2xl border px-4 py-3 text-left transition duration-300 hover:-translate-y-0.5 hover:shadow-lg ${selected ? colorClasses : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'}`}
                 >
-                  <span className="font-semibold text-slate-800">{meter.cadran}</span>
-                  <span className="truncate text-xs font-medium text-slate-500">{meterClientName(meter) || t('tables.client')}</span>
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${option.color === 'amber' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}`}>
+                    <Icon size={22} />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-black">{option.label}</span>
+                    <span className="mt-0.5 block text-xs font-semibold text-slate-500">{expectedMeterPrefix(option.value)}XXXX</span>
+                  </span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
+          </div>
+          {errors.service_type && <p className="text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(errors.service_type)}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <div className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-slate-600">ÉTAPE 2</div>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-slate-700">{t('forms.anomaly')} <span className="text-[var(--srm-red)]">*</span></span>
+            <select
+              name="anomaly_category"
+              value={values.anomaly_category}
+              disabled={!values.service_type}
+              onChange={(event) => update('anomaly_category', event.target.value)}
+              className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${errors.anomaly_category ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200 bg-slate-50/80 text-slate-800'}`}
+            >
+              <option value="">{values.service_type ? "Choisir le type d'anomalie" : "⚠️ Choisir d'abord le type de compteur"}</option>
+              {availableAnomalies.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              {values.service_type && <option value={otherAnomalyValue}>Autre</option>}
+            </select>
+            {errors.anomaly_category && <p className="mt-1 text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(errors.anomaly_category)}</p>}
+          </label>
+          {values.anomaly_category === otherAnomalyValue && (
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-semibold text-slate-700">Spécifier l'anomalie <span className="text-[var(--srm-red)]">*</span></span>
+              <input
+                name="custom_anomalie"
+                value={values.custom_anomalie}
+                onChange={(event) => update('custom_anomalie', event.target.value)}
+                placeholder="Saisir le type d'anomalie..."
+                className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors.custom_anomalie ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
+                required
+              />
+              {errors.custom_anomalie && <p className="mt-1 text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(errors.custom_anomalie)}</p>}
+            </label>
           )}
-          {selectedMeter && (
-            <div className="rounded-xl border border-green-100 bg-[var(--srm-green-soft)] px-3 py-2 text-xs font-semibold text-[var(--srm-green)]">
-              {selectedMeter.cadran} - {meterClientName(selectedMeter) || t('tables.client')}
-            </div>
-          )}
-          {errors.id_compteur && <p className="text-xs font-medium text-[var(--srm-red)]">{errors.id_compteur}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <div className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-slate-600">ÉTAPE 3</div>
+          <label className="block text-sm font-semibold text-slate-700">
+            Compteur concerné (N° Série) <span className="text-[var(--srm-red)]">*</span>
+          </label>
+          <select
+            name="id_compteur"
+            value={values.id_compteur}
+            disabled={!values.service_type}
+            onChange={(event) => {
+              const meter = availableMeters.find((item) => String(item.id_compteur ?? item.id) === event.target.value);
+              if (meter) {
+                selectMeter(meter);
+              } else {
+                update('id_compteur', '');
+              }
+            }}
+            className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 ${errors.id_compteur ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200 bg-slate-50/80 text-slate-800'}`}
+          >
+            <option value="">{values.service_type ? `Choisir un compteur ${expectedMeterPrefix(values.service_type)}XXXX` : "⚠️ Choisir d'abord le type de compteur"}</option>
+            {availableMeters.map((meter) => (
+              <option key={meter.id_compteur ?? meter.id} value={String(meter.id_compteur ?? meter.id)}>
+                {meter.cadran} - {meterClientName(meter) || t('tables.client')}
+              </option>
+            ))}
+          </select>
+          <MeterContextPreview meter={selectedMeter} />
+          {errors.id_compteur && <p className="text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(errors.id_compteur)}</p>}
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">{t('forms.anomaly')} <span className="text-[var(--srm-red)]">*</span></span>
-            <select value={values.anomaly_category} onChange={(event) => update('anomaly_category', event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100">
-              {anomalyCategories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </label>
-          <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">{t('forms.faultDate')} <span className="text-[var(--srm-red)]">*</span></span>
-            <input type="date" value={values.date_panne} onChange={(event) => update('date_panne', event.target.value)} className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors.date_panne ? 'border-[var(--srm-red)]' : 'border-slate-200'}`} />
-            {errors.date_panne && <p className="mt-1 text-xs font-medium text-[var(--srm-red)]">{errors.date_panne}</p>}
+            <input name="date_panne" type="date" value={values.date_panne} onChange={(event) => update('date_panne', event.target.value)} className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors.date_panne ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`} />
+            {errors.date_panne && <p className="mt-1 text-xs font-medium text-red-500 transition-opacity duration-300">{errorText(errors.date_panne)}</p>}
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-slate-700">{t('forms.status')}</span>
             <select value={values.status} onChange={(event) => update('status', event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100">
               <option value="open">{t('statuses.open')}</option>
+              <option value="assigned">{t('statuses.assigned')}</option>
+              <option value="in_progress">{t('statuses.in_progress')}</option>
               <option value="resolved">{t('statuses.resolved')}</option>
             </select>
           </label>
@@ -383,17 +543,14 @@ function AnomalyCreateModal({ compteurs, technicians, onClose, onSubmit }) {
           </label>
         </div>
 
-        {values.anomaly_category === 'other' && (
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">Description <span className="text-[var(--srm-red)]">*</span></span>
-            <input value={values.description} onChange={(event) => update('description', event.target.value)} placeholder="Describe the anomaly" className={`w-full rounded-xl border bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors.description ? 'border-[var(--srm-red)]' : 'border-slate-200'}`} />
-            {errors.description && <p className="mt-1 text-xs font-medium text-[var(--srm-red)]">{errors.description}</p>}
-          </label>
-        )}
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-semibold text-slate-700">Description</span>
+          <input name="description" value={values.description} onChange={(event) => update('description', event.target.value)} placeholder="Décrire l'anomalie" className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100" />
+        </label>
 
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
           <Button variant="secondary" onClick={onClose}>{t('buttons.cancel')}</Button>
-          <Button variant="primary" type="submit" loading={saving}>{t('pannes.create')}</Button>
+          <Button variant="primary" type="submit" loading={saving} disabled={!stepsReady}>{t('pannes.create')}</Button>
         </div>
       </form>
     </Modal>

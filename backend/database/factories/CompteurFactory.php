@@ -16,10 +16,11 @@ class CompteurFactory extends Factory
     {
         return [
             'cadran' => fake()->unique()->numerify('CAD-######'),
-            'num_contrat' => fake()->unique()->numerify('CTR-######'),
+            'num_contrat' => fake()->unique()->numerify('#########'),
             'num_tournee' => fake()->bothify('T-###'),
-            'usage' => fake()->randomElement(['domestic', 'commercial', 'industrial']),
-            'calibre' => fake()->randomElement(['15', '20']),
+            'usage' => fake()->randomElement(['Domestique', 'Patente', 'Administration']),
+            'calibre' => fake()->randomElement(['15', '20', '30', '40', '50', '60', '2 fils', '4 fils']),
+            'technical_type' => fake()->randomElement(['Mécanique', 'Numérique']),
             'marque' => fake()->randomElement(['Elster', 'Itron', 'Sensus', 'Zenner', 'Actaris']),
             'service_type' => fake()->randomElement(['water', 'electricity']),
             'index_releve' => fake()->randomFloat(2, 0, 15000),

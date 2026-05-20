@@ -26,6 +26,6 @@ export const endpoints = {
   releves: (params) => api.get('/releves', { params }),
   notifications: (params) => api.get('/notifications', { params }),
   markNotificationsRead: (payload = {}) => api.post('/notifications/read', payload),
-  markNotificationRead: (id) => api.patch(`/notifications/${id}/read`),
+  markNotificationRead: (id) => api.put(`/notifications/${id}/read`),
   markAllNotificationsRead: () => api.patch('/notifications/read-all'),
 };

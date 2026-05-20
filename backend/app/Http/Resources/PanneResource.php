@@ -20,7 +20,12 @@ class PanneResource extends JsonResource
             'date_panne' => $this->date_panne?->toDateString(),
             'anomalie' => $this->anomalie instanceof PanneAnomalie ? $this->anomalie->value : $this->anomalie,
             'status' => $status,
-            'statut' => $status === PanneStatus::Resolved->value ? 'résolue' : 'ouverte',
+            'statut' => match ($status) {
+                PanneStatus::Assigned->value => 'assignée',
+                PanneStatus::InProgress->value => 'en cours',
+                PanneStatus::Resolved->value => 'résolue',
+                default => 'nouvelle',
+            },
             'assigned_to' => $this->assigned_to,
             'assigned_technician' => new UserResource($this->whenLoaded('assignedOperator')),
             'assigned_operator' => new UserResource($this->whenLoaded('assignedOperator')),

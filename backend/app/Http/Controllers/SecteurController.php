@@ -24,7 +24,7 @@ class SecteurController extends Controller
             'nom_secteur' => ['required', 'string', 'max:255'],
             'emplacement' => ['required', Rule::in(['Taza Haut', 'Taza Bas'])],
             'agence' => ['nullable', 'string', 'max:255'],
-            'num_torne' => ['required', 'string', 'max:255'],
+            'num_torne' => ['required', 'string', 'max:255', Rule::unique('secteurs', 'num_torne')],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
@@ -47,7 +47,7 @@ class SecteurController extends Controller
             'nom_secteur' => ['sometimes', 'required', 'string', 'max:255'],
             'emplacement' => ['sometimes', 'required', Rule::in(['Taza Haut', 'Taza Bas'])],
             'agence' => ['sometimes', 'required', 'string', 'max:255'],
-            'num_torne' => ['sometimes', 'required', 'string', 'max:255'],
+            'num_torne' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('secteurs', 'num_torne')->ignore($secteur)],
             'latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
         ]);

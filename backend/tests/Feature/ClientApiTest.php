@@ -40,36 +40,53 @@ class ClientApiTest extends TestCase
         $secteur = Secteur::factory()->create(['agence' => 'SRM-FM Taza']);
 
         $createResponse = $this->postJson('/api/clients', [
-            'police' => 'POL-900001',
+            'police' => '001456827',
             'nom' => 'Alaoui',
             'prenom' => 'Youssef',
             'cin' => 'AB123456',
             'telephone' => '0611111111',
             'adresse' => 'Qods 1, Taza',
-            'type_abonnement' => 'domestic',
+            'type_abonnement' => 'Domestique',
             'service_type' => 'water',
             'id_secteur' => $secteur->id,
             'abonne' => true,
         ])->assertCreated();
 
         $clientId = $createResponse->json('data.id');
+        $contractNumber = $createResponse->json('data.police');
 
+        $this->assertSame('001456827', $contractNumber);
         $this->getJson('/api/clients')
             ->assertOk()
-            ->assertJsonPath('data.0.police', 'POL-900001');
+            ->assertJsonPath('data.0.police', $contractNumber);
 
         $this->patchJson("/api/clients/{$clientId}", [
             'telephone' => '0699999999',
-            'type_abonnement' => 'commercial',
+            'type_abonnement' => 'Patente',
         ])->assertOk()
             ->assertJsonPath('data.telephone', '0699999999')
-            ->assertJsonPath('data.type_abonnement', 'commercial');
+            ->assertJsonPath('data.type_abonnement', 'Patente');
 
         $this->deleteJson("/api/clients/{$clientId}")->assertNoContent();
 
         $this->assertSoftDeleted(Client::class, [
             'id' => $clientId,
         ]);
+    }
+
+    public function test_client_creation_requires_contract_number_and_cin(): void
+    {
+        Sanctum::actingAs(User::factory()->create(['role' => UserRole::Responsable]));
+        $secteur = Secteur::factory()->create(['agence' => 'SRM-FM Taza']);
+
+        $this->postJson('/api/clients', [
+            'nom' => 'Alaoui',
+            'adresse' => 'Qods 1, Taza',
+            'type_abonnement' => 'Domestique',
+            'service_type' => 'water',
+            'id_secteur' => $secteur->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['police', 'cin']);
     }
 
     public function test_responsable_cannot_create_client_in_another_agency_sector(): void
@@ -84,8 +101,9 @@ class ClientApiTest extends TestCase
         $this->postJson('/api/clients', [
             'police' => 'POL-900002',
             'nom' => 'Alaoui',
+            'cin' => 'AB654321',
             'adresse' => 'Qods 1, Taza',
-            'type_abonnement' => 'domestic',
+            'type_abonnement' => 'Domestique',
             'service_type' => 'water',
             'id_secteur' => $otherAgencySector->id,
         ])->assertStatus(422);

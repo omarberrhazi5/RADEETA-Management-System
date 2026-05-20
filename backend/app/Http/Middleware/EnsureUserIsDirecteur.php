@@ -11,9 +11,9 @@ class EnsureUserIsDirecteur
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $role = $request->user()?->role instanceof UserRole
+        $role = strtolower(trim((string) ($request->user()?->role instanceof UserRole
             ? $request->user()->role->value
-            : $request->user()?->role;
+            : $request->user()?->role)));
 
         if ($role !== UserRole::Directeur->value) {
             return response()->json(['message' => 'Forbidden'], 403);

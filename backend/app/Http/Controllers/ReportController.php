@@ -89,7 +89,9 @@ class ReportController extends Controller
     private function statusLabels(): array
     {
         return [
-            PanneStatus::Open->value => 'Ouverte',
+            PanneStatus::Open->value => 'Nouvelle',
+            PanneStatus::Assigned->value => 'Assignee',
+            PanneStatus::InProgress->value => 'En cours',
             PanneStatus::Resolved->value => 'Resolue',
         ];
     }

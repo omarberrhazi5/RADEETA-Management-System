@@ -29,7 +29,7 @@ return new class extends Migration
         if (Schema::hasTable('clients')) {
             Schema::table('clients', function (Blueprint $table): void {
                 if (! Schema::hasColumn('clients', 'type_abonnement')) {
-                    $table->enum('type_abonnement', ['domestic', 'commercial', 'industrial'])->default('domestic')->after('adresse');
+                    $table->enum('type_abonnement', ['Domestique', 'Patente', 'Administration'])->default('Domestique')->after('adresse');
                 }
 
                 if (! Schema::hasColumn('clients', 'service_type')) {

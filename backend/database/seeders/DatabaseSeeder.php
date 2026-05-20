@@ -103,7 +103,7 @@ class DatabaseSeeder extends Seeder
                 'cin' => $cinPrefix.str_pad((string) (12500 + $i * 37), 6, '0', STR_PAD_LEFT),
                 'telephone' => '06'.str_pad((string) (11000000 + $i * 32741), 8, '0', STR_PAD_LEFT),
                 'adresse' => $streets[($i - 1) % count($streets)],
-                'type_abonnement' => $secteur->nom_secteur === 'Zone Industrielle' ? 'industrial' : (($i % 7 === 0) ? 'commercial' : 'domestic'),
+                'type_abonnement' => $secteur->nom_secteur === 'Zone Industrielle' ? 'Administration' : (($i % 7 === 0) ? 'Patente' : 'Domestique'),
                 'service_type' => $i % 5 === 0 ? 'electricity' : 'water',
                 'id_secteur' => $secteur->id,
                 'abonne' => $i % 19 !== 0,
@@ -122,6 +122,7 @@ class DatabaseSeeder extends Seeder
                 'num_tournee' => $secteur->num_torne,
                 'usage' => $client->type_abonnement,
                 'calibre' => $isBusiness ? '20' : '15',
+                'technical_type' => $client->service_type === 'electricity' ? ($index % 3 === 0 ? 'Numérique' : 'Mécanique') : 'Mécanique',
                 'marque' => ['Itron', 'Sagemcom', 'Landis+Gyr', 'Elster'][($index) % 4],
                 'service_type' => $client->service_type,
                 'index_releve' => 0,
@@ -192,7 +193,7 @@ class DatabaseSeeder extends Seeder
             return Panne::updateOrCreate([
                 'id_compteur' => $compteur->id,
                 'date_panne' => now()->subDays(70 - $i)->toDateString(),
-                'anomalie' => $anomalies[$i % count($anomalies)],
+                'anomalie' => $anomalies[$i % count($anomalies)]->value,
             ], [
                 'status' => $resolved ? PanneStatus::Resolved : PanneStatus::Open,
                 'assigned_to' => $operators[$i % $operators->count()]->id,

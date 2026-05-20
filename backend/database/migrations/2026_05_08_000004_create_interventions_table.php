@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('panne_id')->nullable()->constrained('pannes')->nullOnDelete();
             $table->foreignId('client_id')->nullable()->constrained('clients')->nullOnDelete();
             $table->foreignId('meter_id')->nullable()->constrained('compteurs')->nullOnDelete();
-            $table->foreignId('technician_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('technician_id')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('service_type', ['water', 'electricity'])->default('water');
             $table->string('work_type');
             $table->json('materials_used')->nullable();

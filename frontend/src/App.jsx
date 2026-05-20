@@ -16,7 +16,7 @@ import Interventions from './pages/Interventions';
 import Reparations from './pages/Reparations';
 import Administration from './pages/Administration';
 import Reports from './pages/Reports';
-import MyTasks from './pages/MyTasks';
+import MyTasks from './pages/MyTasks.jsx';
 import { ROLES } from './utils/rbac';
 
 export default function App() {
@@ -36,6 +36,15 @@ export default function App() {
               <Route element={<ProtectedRoute roles={[ROLES.DIRECTEUR]} />}>
                 <Route path="administration" element={<Administration />} />
                 <Route path="users" element={<Navigate to="/administration" replace />} />
+                <Route path="clients" element={<Clients />} />
+                <Route path="compteurs" element={<Compteurs />} />
+                <Route path="secteurs" element={<Secteurs />} />
+                <Route path="anomalies" element={<Pannes />} />
+                <Route path="pannes" element={<Pannes />} />
+                <Route path="repairs" element={<Reparations />} />
+                <Route path="reparations" element={<Reparations />} />
+                <Route path="interventions" element={<Interventions />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="admin/administration" element={<Administration />} />
                 <Route path="admin/users" element={<Navigate to="/admin/administration" replace />} />
               </Route>

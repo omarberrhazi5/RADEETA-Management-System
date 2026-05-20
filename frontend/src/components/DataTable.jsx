@@ -38,15 +38,18 @@ export default function DataTable({
   filters,
   emptyMessage,
   defaultSort,
+  allowCreate,
+  allowEdit,
+  allowDelete,
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState(defaultSort ?? { key: columns[0]?.key, direction: 'asc' });
   const [page, setPage] = useState(1);
   const pageSize = 12;
-  const showCreate = onCreate && canCreate(role, resource);
-  const showEdit = onEdit && canUpdate(role, resource);
-  const showDelete = onDelete && canDelete(role, resource);
+  const showCreate = onCreate && (allowCreate ?? canCreate(role, resource));
+  const showEdit = onEdit && (allowEdit ?? canUpdate(role, resource));
+  const showDelete = onDelete && (allowDelete ?? canDelete(role, resource));
   const showActions = showEdit || showDelete;
   const visibleRows = useMemo(() => {
     const search = query.trim().toLowerCase();

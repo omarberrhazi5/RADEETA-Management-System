@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import Badge from './ui/Badge';
 import { EmptyState, LoadingState } from './PageState';
 import { translateAnomaly, translateStatus } from '../utils/i18nLabels';
+import { useAuth } from '../hooks/useAuth';
+import { ROLES, normalizeRole } from '../utils/rbac';
 
 const TAZA_CENTER = [34.22, -4.01];
 
@@ -23,6 +25,14 @@ function iconFor(status) {
 
 export default function PanneMap({ pannes = [], sectors = [], height = '420px', loading = false }) {
   const { t } = useTranslation();
+  const { role } = useAuth();
+  const normalizedRole = normalizeRole(role);
+  const pannesPath = {
+    [ROLES.DIRECTEUR]: '/anomalies',
+    [ROLES.RESPONSABLE]: '/admin/pannes',
+    [ROLES.MANAGER]: '/manager/pannes',
+    [ROLES.VIEWER]: '/viewer/pannes',
+  }[normalizedRole] ?? '/access-denied';
   const points = pannes
     .map((panne) => {
       const secteur = panne.compteur?.secteur;
@@ -74,7 +84,7 @@ export default function PanneMap({ pannes = [], sectors = [], height = '420px', 
                       <div><span className="font-semibold">{t('tables.anomaly')}:</span> {translateAnomaly(t, point.panne.anomalie)}</div>
                       <div><span className="font-semibold">{t('tables.technician')}:</span> {point.panne.assigned_technician || point.panne.assigned_operator ? `${(point.panne.assigned_technician ?? point.panne.assigned_operator).prenom ?? ''} ${(point.panne.assigned_technician ?? point.panne.assigned_operator).nom ?? ''}`.trim() : '-'}</div>
                       <Badge label={translateStatus(t, point.panne.statut ?? point.panne.status)} color="red" />
-                      <Link to="../pannes" className="block text-xs font-semibold text-[var(--srm-green)] hover:underline">
+                      <Link to={pannesPath} className="block text-xs font-semibold text-[var(--srm-green)] hover:underline">
                         {t('map.openPannesList')}
                       </Link>
                     </>

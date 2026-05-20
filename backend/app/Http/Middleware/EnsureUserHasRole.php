@@ -13,7 +13,7 @@ class EnsureUserHasRole
     {
         $user = $request->user();
 
-        $role = $user?->role instanceof UserRole ? $user->role->value : $user?->role;
+        $role = strtolower(trim((string) ($user?->role instanceof UserRole ? $user->role->value : $user?->role)));
 
         if ($role === UserRole::Developer->value && app()->isProduction()) {
             return response()->json(['message' => 'Developer access is disabled in production.'], 403);

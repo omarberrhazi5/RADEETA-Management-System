@@ -31,7 +31,6 @@ class Panne extends Model
     {
         return [
             'date_panne' => 'date',
-            'anomalie' => PanneAnomalie::class,
             'status' => PanneStatus::class,
         ];
     }

@@ -1,6 +1,10 @@
 const STATUS_ALIASES = {
   ouverte: 'open',
   ouvert: 'open',
+  nouvelle: 'open',
+  assignee: 'assigned',
+  'assignée': 'assigned',
+  en_cours: 'in_progress',
   'rã©solue': 'resolved',
   resolue: 'resolved',
   résolue: 'resolved',
@@ -48,7 +52,7 @@ export function translateStatus(t, status) {
 export function translateAnomaly(t, anomaly) {
   const key = normalizedKey(anomaly);
   if (!key) return t('tables.anomaly');
-  return t(`anomalies.${key}`, { defaultValue: t('common.notAvailable') });
+  return t(`anomalies.${key}`, { defaultValue: compactString(anomaly) });
 }
 
 export function translateModule(t, module) {

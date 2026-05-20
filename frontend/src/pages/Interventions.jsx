@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -27,11 +27,17 @@ import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 import { translateAnomaly, translateStatus } from '../utils/i18nLabels';
 import { ROLES, canCreate, canUpdate } from '../utils/rbac';
+import { errorText, fieldError, focusFirstInvalid, normalizeApiErrors } from '../utils/formValidation';
 
 const statusKeys = ['en_attente', 'en_cours', 'terminee', 'annulee'];
 const priorityKeys = ['low', 'normal', 'high', 'urgent'];
 const statusColors = { en_attente: 'amber', en_cours: 'green', terminee: 'green', annulee: 'gray' };
 const priorityColors = { low: 'gray', normal: 'green', high: 'amber', urgent: 'red' };
+const WORKSPACE_GPS_FALLBACK = {
+  latitude: '34.2111',
+  longitude: '-4.0111',
+};
+const GEOLOCATION_ERROR_MESSAGE = 'Veuillez activer la géolocalisation sur votre appareil.';
 
 function normalizeStatus(status) {
   if (status === 'echouee') return 'annulee';
@@ -75,6 +81,26 @@ function searchable(row) {
   ].join(' ').toLowerCase();
 }
 
+function sectorFromRecord(record) {
+  return record?.panne?.compteur?.secteur ?? record?.meter?.secteur ?? record?.compteur?.secteur ?? null;
+}
+
+function sectorCoordinates(record) {
+  const secteur = sectorFromRecord(record);
+  const latitude = Number(secteur?.latitude);
+  const longitude = Number(secteur?.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return {
+    latitude: latitude.toFixed(6),
+    longitude: longitude.toFixed(6),
+    sectorName: secteur?.nom_secteur,
+  };
+}
+
 function StatTile({ label, value, icon: Icon, color }) {
   const colors = {
     blue: 'bg-[var(--srm-green-soft)] text-[var(--srm-green)] border-green-100',
@@ -115,6 +141,7 @@ export default function Interventions() {
   const { t } = useTranslation();
   const location = useLocation();
   const { role, user } = useAuth();
+  const formRef = useRef(null);
   const { error, items, loading, refresh } = useResource(endpoints.interventions, { limit: 500 });
   const pannes = useResource(endpoints.pannes, { limit: 500 });
   const technicians = useResource(endpoints.technicians, { limit: 500 }, { enabled: role !== ROLES.TECHNICIAN && role !== ROLES.VIEWER });
@@ -127,11 +154,16 @@ export default function Interventions() {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const pageSize = 10;
-  const canWrite = canCreate(role, 'interventions') || canUpdate(role, 'interventions');
+  const isMonitoringRole = [ROLES.RESPONSABLE, ROLES.MANAGER].includes(role);
+  const canCreateIntervention = canCreate(role, 'interventions') || role === ROLES.MANAGER;
+  const canEditIntervention = canUpdate(role, 'interventions') && !isMonitoringRole;
   const managerEdit = formState?.mode === 'edit' && role === ROLES.MANAGER;
   const technicianEdit = formState?.mode === 'edit' && role === ROLES.TECHNICIAN;
   const fullEdit = !managerEdit && !technicianEdit;
+  const targetInterventionId = location.state?.targetInterventionId ?? null;
+  const targetPanneId = location.state?.targetPanneId ?? null;
 
   const stats = useMemo(() => ({
     water: items.filter((item) => item.service_type === 'water').length,
@@ -147,7 +179,9 @@ export default function Interventions() {
     const filtered = items.filter((item) => {
       const matchesSearch = !search || searchable(item).includes(search);
       const matchesService = !serviceFilter || item.service_type === serviceFilter;
-      return matchesSearch && matchesService;
+      const matchesTargetIntervention = !targetInterventionId || String(item.id) === String(targetInterventionId);
+      const matchesTargetPanne = !targetPanneId || String(item.panne_id ?? item.id_panne) === String(targetPanneId);
+      return matchesSearch && matchesService && matchesTargetIntervention && matchesTargetPanne;
     });
 
     return [...filtered].sort((left, right) => {
@@ -155,7 +189,7 @@ export default function Interventions() {
       const b = sortableValue(right, sort.key);
       return sort.direction === 'asc' ? a.localeCompare(b, undefined, { numeric: true }) : b.localeCompare(a, undefined, { numeric: true });
     });
-  }, [items, query, serviceFilter, sort]);
+  }, [items, query, serviceFilter, sort, targetInterventionId, targetPanneId]);
 
   const totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -163,6 +197,7 @@ export default function Interventions() {
 
   const openCreate = useCallback((panne = null) => {
     const compteur = panne?.compteur;
+    const coordinates = sectorCoordinates(panne);
     setFormState({ mode: 'create' });
     setErrors({});
     setForm({
@@ -177,6 +212,9 @@ export default function Interventions() {
       materials_used: '',
       priority: 'normal',
       observations: '',
+      latitude: coordinates?.latitude ?? WORKSPACE_GPS_FALLBACK.latitude,
+      longitude: coordinates?.longitude ?? WORKSPACE_GPS_FALLBACK.longitude,
+      location_note: '',
       status: 'en_attente',
       completed_at: '',
     });
@@ -190,6 +228,7 @@ export default function Interventions() {
   }, [location.state?.panne, openCreate]);
 
   function openEdit(item) {
+    const coordinates = sectorCoordinates(item);
     setFormState({ mode: 'edit', item });
     setErrors({});
     setForm({
@@ -204,14 +243,18 @@ export default function Interventions() {
       materials_used: Array.isArray(item.materials_used ?? item.material_used) ? (item.materials_used ?? item.material_used).join('\n') : item.materials_used ?? '',
       priority: item.priority ?? 'normal',
       observations: item.observations ?? '',
+      latitude: item.latitude ?? coordinates?.latitude ?? WORKSPACE_GPS_FALLBACK.latitude,
+      longitude: item.longitude ?? coordinates?.longitude ?? WORKSPACE_GPS_FALLBACK.longitude,
+      location_note: item.location_note ?? '',
       status: normalizeStatus(item.status),
       completed_at: item.completed_at ?? '',
     });
   }
 
   function update(name, value) {
-    setForm((current) => ({ ...current, [name]: value }));
-    setErrors((current) => ({ ...current, [name]: '', general: '' }));
+    const nextForm = { ...form, [name]: value };
+    setForm(nextForm);
+    setErrors((current) => ({ ...current, [name]: validateField(name, nextForm), general: '' }));
 
     if (name === 'panne_id') {
       const panne = pannes.items.find((item) => String(item.id_panne ?? item.id) === String(value));
@@ -229,15 +272,32 @@ export default function Interventions() {
   function validate() {
     const next = {};
     const requiredFields = managerEdit
-      ? ['technician_id', 'status']
+      ? ['status']
       : technicianEdit
         ? ['status']
-        : ['started_at', 'service_type', 'technician_id', 'panne_id', 'work_type', 'priority', 'status'];
+        : ['started_at', 'service_type', 'panne_id', 'work_type', 'priority', 'status'];
 
     requiredFields.forEach((field) => {
-      if (!String(form[field] ?? '').trim()) next[field] = t('forms.required');
+      const error = validateField(field);
+      if (error) next[field] = error;
     });
     return next;
+  }
+
+  function validateField(field, nextForm = form) {
+    const dateFields = ['started_at', 'completed_at'];
+    if (dateFields.includes(field) && nextForm[field]) return fieldError(nextForm[field], { type: 'date' }, t);
+
+    const requiredFields = managerEdit
+      ? ['status']
+      : technicianEdit
+        ? ['status']
+        : ['started_at', 'service_type', 'panne_id', 'work_type', 'priority', 'status'];
+
+    return fieldError(nextForm[field], {
+      required: requiredFields.includes(field),
+      type: dateFields.includes(field) ? 'date' : undefined,
+    }, t);
   }
 
   async function submit(event) {
@@ -245,13 +305,14 @@ export default function Interventions() {
     const nextErrors = validate();
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
+      focusFirstInvalid(formRef, nextErrors);
       return;
     }
 
     const payload = {
       started_at: form.started_at,
       service_type: form.service_type,
-      technician_id: form.technician_id,
+      technician_id: form.technician_id || null,
       client_id: form.client_id || null,
       meter_id: form.meter_id || null,
       panne_id: form.panne_id,
@@ -259,6 +320,9 @@ export default function Interventions() {
       materials_used: form.materials_used,
       priority: form.priority,
       observations: form.observations,
+      latitude: form.latitude || null,
+      longitude: form.longitude || null,
+      location_note: form.location_note || null,
       status: form.status,
       completed_at: form.completed_at || null,
     };
@@ -270,7 +334,7 @@ export default function Interventions() {
       } else {
         await api.put(`/interventions/${formState.item.id}`, payload);
         if (role === ROLES.TECHNICIAN && payload.status === 'terminee') {
-          setToast('Intervention terminée et enregistrée dans les réparations');
+          setToast({ message: 'Intervention terminée et enregistrée dans les réparations', type: 'success' });
           window.setTimeout(() => setToast(null), 3500);
         }
       }
@@ -278,7 +342,7 @@ export default function Interventions() {
       refresh();
     } catch (error) {
       const apiErrors = error.response?.data?.errors;
-      setErrors(apiErrors ? Object.fromEntries(Object.entries(apiErrors).map(([key, messages]) => [key, Array.isArray(messages) ? messages[0] : messages])) : { general: error.response?.data?.message ?? t('interventions.unableToSave') });
+      setErrors(normalizeApiErrors(apiErrors, error.response?.data?.message ?? t('interventions.unableToSave')));
     } finally {
       setSaving(false);
     }
@@ -286,6 +350,47 @@ export default function Interventions() {
 
   function toggleSort(key) {
     setSort((current) => ({ key, direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc' }));
+  }
+
+  function saveGpsCoordinates(latitude, longitude) {
+    setForm((current) => ({
+      ...current,
+      latitude,
+      longitude,
+    }));
+    setToast({ message: 'Localisation enregistrée avec succès', type: 'success' });
+    window.setTimeout(() => setToast(null), 2500);
+  }
+
+  function saveWorkspaceGpsFallback() {
+    setForm((current) => ({
+      ...current,
+      latitude: WORKSPACE_GPS_FALLBACK.latitude,
+      longitude: WORKSPACE_GPS_FALLBACK.longitude,
+    }));
+
+    setToast({ message: GEOLOCATION_ERROR_MESSAGE, type: 'error' });
+    window.setTimeout(() => setToast(null), 3500);
+  }
+
+  function captureGps() {
+    if (!navigator.geolocation) {
+      saveWorkspaceGpsFallback();
+      return;
+    }
+
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        saveGpsCoordinates(position.coords.latitude.toFixed(6), position.coords.longitude.toFixed(6));
+        setGpsLoading(false);
+      },
+      () => {
+        saveWorkspaceGpsFallback();
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
   }
 
   const columns = [
@@ -300,8 +405,12 @@ export default function Interventions() {
   return (
     <div className="space-y-6">
       {toast && (
-        <div className="fixed right-5 top-5 z-50 rounded-xl border border-green-100 bg-[var(--srm-green-soft)] px-4 py-3 text-sm font-semibold text-[var(--srm-green)] shadow-lg">
-          {toast}
+        <div className={`fixed right-5 top-5 z-50 rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg ${
+          (toast.type ?? 'success') === 'error'
+            ? 'border-red-100 bg-[var(--srm-red-soft)] text-[var(--srm-red)]'
+            : 'border-green-100 bg-[var(--srm-green-soft)] text-[var(--srm-green)]'
+        }`}>
+          {toast.message ?? toast}
         </div>
       )}
       {error && <ErrorState message={error} />}
@@ -336,7 +445,7 @@ export default function Interventions() {
             <option value="water">{t('services.water')}</option>
             <option value="electricity">{t('services.electricity')}</option>
           </select>
-          {canCreate(role, 'interventions') && (
+          {canCreateIntervention && (
             <Button variant="primary" onClick={() => openCreate()}>
               <Plus size={16} />
               {t('interventions.new')}
@@ -373,7 +482,7 @@ export default function Interventions() {
                     </button>
                   </th>
                 ))}
-                {canWrite && <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">{t('common.actions')}</th>}
+                {canEditIntervention && <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">{t('common.actions')}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -394,7 +503,7 @@ export default function Interventions() {
                     <td className="whitespace-nowrap px-4 py-3"><Badge label={translateStatus(t, row.priority)} color={priorityColors[row.priority] ?? 'gray'} /></td>
                     <td className="whitespace-nowrap px-4 py-3"><Badge label={translateStatus(t, status)} color={statusColors[status] ?? 'gray'} /></td>
                     <td className="whitespace-nowrap px-4 py-3 text-gray-700">{formatDate(row.started_at ?? row.intervention_at)}</td>
-                    {canWrite && (
+                    {canEditIntervention && (
                       <td className="px-4 py-3">
                         <div className="flex justify-end">
                           <button type="button" onClick={() => openEdit(row)} className="inline-flex h-10 w-10 items-center justify-center rounded-md text-gray-500 transition duration-300 hover:bg-[var(--srm-green-soft)] hover:text-[var(--srm-green)]" title={t('buttons.edit')}>
@@ -426,8 +535,8 @@ export default function Interventions() {
       </section>
 
       {formState && (
-        <Modal title={formState.mode === 'create' ? t('interventions.new') : t('buttons.edit')} onClose={() => setFormState(null)} maxWidth="max-w-4xl">
-          <form onSubmit={submit} className="space-y-5">
+        <Modal title={formState.mode === 'create' ? t('interventions.new') : "Mettre à jour l'intervention"} onClose={() => setFormState(null)} maxWidth="max-w-4xl">
+          <form ref={formRef} onSubmit={submit} noValidate className="space-y-5">
             {errors.general && <div className="rounded-lg border border-red-100 bg-[var(--srm-red-soft)] px-3 py-2 text-sm text-[var(--srm-red)]">{errors.general}</div>}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label={t('forms.interventionNumber')} name="intervention_number" value={form.intervention_number} disabled />
@@ -436,7 +545,7 @@ export default function Interventions() {
               {technicianEdit ? (
                 <Field label={t('forms.technician')} name="technician_id" value={technicianName(user)} disabled />
               ) : (fullEdit || managerEdit) ? (
-                <Select label={t('forms.technician')} name="technician_id" value={form.technician_id} error={errors.technician_id} onChange={update} options={technicians.items.map((technician) => [technician.id, technicianName(technician)])} required />
+                <Select label={t('forms.technician')} name="technician_id" value={form.technician_id} error={errors.technician_id} onChange={update} options={technicians.items.map((technician) => [technician.id, technicianName(technician)])} />
               ) : null}
               {fullEdit && <Field label={t('forms.client')} name="client_id" value={form.client_id} error={errors.client_id} onChange={update} />}
               {fullEdit && <Field label={t('forms.meter')} name="meter_id" value={form.meter_id} error={errors.meter_id} onChange={update} />}
@@ -446,6 +555,24 @@ export default function Interventions() {
               <Select label={t('forms.status')} name="status" value={form.status} error={errors.status} onChange={update} options={statusKeys.map((key) => [key, t(`statuses.${key}`)])} required />
               {(fullEdit || technicianEdit) && <Field label={t('forms.completedAt')} name="completed_at" type="datetime-local" value={form.completed_at} error={errors.completed_at} onChange={update} />}
             </div>
+            {technicianEdit && (
+              <div className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Preuve de présence</h3>
+                    <p className="mt-1 text-xs text-gray-500">Coordonnées GPS capturées depuis l'appareil du technicien.</p>
+                  </div>
+                  <Button variant="secondary" onClick={captureGps} loading={gpsLoading}>
+                    {gpsLoading ? 'Chargement...' : 'Capturer GPS'}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field label="Latitude" name="latitude" value={form.latitude} error={errors.latitude} onChange={update} readOnly />
+                  <Field label="Longitude" name="longitude" value={form.longitude} error={errors.longitude} onChange={update} readOnly />
+                  <Textarea label="Repère / précisions" name="location_note" value={form.location_note} error={errors.location_note} onChange={update} className="md:col-span-2" />
+                </div>
+              </div>
+            )}
             {(fullEdit || technicianEdit) && (
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Textarea label={t('forms.materialsUsed')} name="materials_used" value={form.materials_used} error={errors.materials_used} onChange={update} />
@@ -463,18 +590,20 @@ export default function Interventions() {
   );
 }
 
-function Field({ label, name, value, onChange, error, type = 'text', disabled = false, required = false }) {
+function Field({ label, name, value, onChange, error, type = 'text', disabled = false, readOnly = false, required = false }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}{required && <span className="text-[var(--srm-red)]"> *</span>}</span>
       <input
         type={type}
+        name={name}
         value={value ?? ''}
         onChange={(event) => onChange?.(name, event.target.value)}
         disabled={disabled}
-        className={`h-11 w-full rounded-lg border px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:bg-gray-50 disabled:text-gray-500 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}
+        readOnly={readOnly}
+        className={`h-11 w-full rounded-xl border px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 disabled:bg-gray-50 disabled:text-gray-500 ${readOnly ? 'bg-gray-50 text-gray-600' : ''} ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-gray-200'}`}
       />
-      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-red-500 transition-opacity duration-300">{errorText(error)}</span>}
     </label>
   );
 }
@@ -488,27 +617,28 @@ function Select({ label, name, value, options, onChange, error, required = false
       <select
         value={value ?? ''}
         onChange={(event) => onChange(name, event.target.value)}
-        className={`h-11 w-full rounded-lg border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}
+        className={`h-11 w-full rounded-xl border bg-white px-3 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-gray-200'}`}
       >
         <option value="">{t('common.selectOption')}</option>
         {options.map(([optionValue, optionLabel]) => <option key={optionValue} value={optionValue}>{optionLabel}</option>)}
       </select>
-      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-red-500 transition-opacity duration-300">{errorText(error)}</span>}
     </label>
   );
 }
 
-function Textarea({ label, name, value, onChange, error }) {
+function Textarea({ label, name, value, onChange, error, className = '' }) {
   return (
-    <label className="block">
+    <label className={`block ${className}`}>
       <span className="mb-1.5 block text-sm font-medium text-gray-700">{label}</span>
       <textarea
         rows={4}
+        name={name}
         value={value ?? ''}
         onChange={(event) => onChange(name, event.target.value)}
-        className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-[var(--srm-red)]' : 'border-gray-200'}`}
+        className={`w-full rounded-xl border px-3 py-2 text-sm text-gray-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${error ? 'border-red-500 ring-2 ring-red-400/40' : 'border-gray-200'}`}
       />
-      {error && <span className="mt-1 block text-xs text-[var(--srm-red)]">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-red-500 transition-opacity duration-300">{errorText(error)}</span>}
     </label>
   );
 }

@@ -25,12 +25,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::delete('auth/tokens', [AuthController::class, 'clearTokens'])->middleware('role:'.UserRole::Directeur->value);
 
     $operationalWriteRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Developer->value]);
+    $restrictedAuditWriteRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
     $supervisionRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
     $reportRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
-    $repairReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $repairReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Developer->value]);
     $interventionReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
-    $repairUpdateRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Technician->value, UserRole::Developer->value]);
-    $fieldUpdateRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
+    $repairUpdateRoles = $restrictedAuditWriteRoles;
+    $panneUpdateRoles = $restrictedAuditWriteRoles;
+    $interventionUpdateRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Developer->value]);
     $businessReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Viewer->value, UserRole::Developer->value]);
     $panneReadRoles = implode(',', [UserRole::Directeur->value, UserRole::Responsable->value, UserRole::Manager->value, UserRole::Technician->value, UserRole::Viewer->value, UserRole::Developer->value]);
     Route::get('dashboard/summary', [DashboardController::class, 'summary'])->middleware("role:{$supervisionRoles}");
@@ -46,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('notifications', [NotificationController::class, 'index']);
     Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::patch('notifications/{id}/read', [NotificationController::class, 'markOneAsRead']);
+    Route::put('notifications/{id}/read', [NotificationController::class, 'markOneAsRead']);
     Route::post('notifications/read', [NotificationController::class, 'markAsRead']);
     Route::put('notifications/mark-as-read', [NotificationController::class, 'markAsRead']);
 
@@ -64,20 +67,21 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('clients', ClientController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('compteurs', CompteurController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('secteurs', SecteurController::class)->only(['store', 'update'])->middleware("role:{$operationalWriteRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['update'])->middleware("role:{$fieldUpdateRoles}");
-    Route::apiResource('reparations', ReparationController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['store'])->middleware("role:{$restrictedAuditWriteRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['update'])->middleware("role:{$panneUpdateRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['store'])->middleware("role:{$restrictedAuditWriteRoles}");
     Route::apiResource('reparations', ReparationController::class)->only(['update'])->middleware("role:{$repairUpdateRoles}");
-    Route::apiResource('interventions', InterventionController::class)->only(['store'])->middleware("role:{$operationalWriteRoles}");
-    Route::apiResource('interventions', InterventionController::class)->only(['update'])->middleware("role:{$fieldUpdateRoles}");
+    Route::patch('interventions/{intervention}/assign-self', [InterventionController::class, 'assignSelf'])->middleware('role:'.UserRole::Technician->value);
+    Route::apiResource('interventions', InterventionController::class)->only(['store'])->middleware("role:{$restrictedAuditWriteRoles}");
+    Route::apiResource('interventions', InterventionController::class)->only(['update'])->middleware("role:{$interventionUpdateRoles}");
     Route::apiResource('releves', ReleveController::class)->only(['store', 'update'])->parameters(['releves' => 'releve'])->middleware("role:{$operationalWriteRoles}");
 
     Route::apiResource('clients', ClientController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('compteurs', CompteurController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
     Route::apiResource('secteurs', SecteurController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
-    Route::apiResource('pannes', PanneController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
-    Route::apiResource('reparations', ReparationController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
-    Route::apiResource('interventions', InterventionController::class)->only(['destroy'])->middleware("role:{$operationalWriteRoles}");
+    Route::apiResource('pannes', PanneController::class)->only(['destroy'])->middleware("role:{$restrictedAuditWriteRoles}");
+    Route::apiResource('reparations', ReparationController::class)->only(['destroy'])->middleware("role:{$restrictedAuditWriteRoles}");
+    Route::apiResource('interventions', InterventionController::class)->only(['destroy'])->middleware("role:{$restrictedAuditWriteRoles}");
 
     Route::get('users/technicians', [UserController::class, 'technicians'])->middleware("role:{$supervisionRoles}");
     Route::get('users/operators', [UserController::class, 'technicians'])->middleware("role:{$supervisionRoles}");

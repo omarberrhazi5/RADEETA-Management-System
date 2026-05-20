@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { clearStoredAuth, ROLE_KEY, TOKEN_KEY, USER_KEY } from '../api/axios';
-import { dashboardPathFor, isDeveloperEnabled, isKnownRole } from '../utils/rbac';
+import { dashboardPathFor, isDeveloperEnabled, isKnownRole, normalizeRole } from '../utils/rbac';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +16,7 @@ function readJson(key) {
 function normalizeUser(payload) {
   const raw = payload?.data ?? payload;
   const user = raw?.user ?? raw;
-  const role = raw?.role ?? user?.role;
+  const role = normalizeRole(raw?.role ?? user?.role);
 
   return { user, role };
 }
