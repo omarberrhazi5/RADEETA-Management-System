@@ -580,6 +580,10 @@
     "loading": "Loading map...",
     "empty": "No anomalies or sector coordinates available for the map.",
     "sector": "Sector",
-    "openPannesList": "Open anomalies list"
+    "openPannesList": "Open anomalies list",
+    "activePannes": "Active anomalies",
+    "description": "Description",
+    "materials": "Materials",
+    "viewDetails": "View details"
   }
 }

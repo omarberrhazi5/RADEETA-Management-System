@@ -1,10 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Activity, AlertTriangle, ClipboardCheck, Droplets, Gauge, Map, ShieldAlert, UserCheck, Users, Zap } from 'lucide-react';
+import { Activity, AlertTriangle, Building2, ClipboardCheck, Droplets, Gauge, ShieldAlert, UserCheck, Users, Zap } from 'lucide-react';
 import { endpoints } from '../api/resources';
 import DashboardCharts from '../components/DashboardCharts';
-import PanneMap from '../components/PanneMap';
 import { ErrorState, SkeletonGrid } from '../components/PageState';
 import StatCard from '../components/ui/StatCard';
 import useResource from '../hooks/useResource';
@@ -14,11 +13,10 @@ export function useDashboardData({ includeStats = true, includeInterventions = t
   const fetchStats = useCallback(() => endpoints.stats(), []);
 
   const pannes = useResource(endpoints.pannes, { limit: 500, sort: 'recent' });
-  const secteurs = useResource(endpoints.secteurs, { limit: 500 });
   const stats = useResource(fetchStats, {}, { enabled: includeStats });
   const interventions = useResource(endpoints.interventions, { limit: 500 }, { enabled: includeStats && includeInterventions });
 
-  return { interventions, pannes, secteurs, stats };
+  return { interventions, pannes, stats };
 }
 
 export function StatsGrid({ stats }) {
@@ -33,7 +31,7 @@ export function StatsGrid({ stats }) {
       <StatCard label={t('dashboard.urgentInterventions')} value={stats?.urgent_interventions ?? '-'} sub={t('dashboard.highPriorityFieldWork')} icon={ShieldAlert} color="red" />
       <StatCard label={t('dashboard.waterClaims')} value={stats?.water_pannes ?? '-'} sub={t('dashboard.waterSector')} icon={Droplets} color="blue" />
       <StatCard label={t('dashboard.electricityClaims')} value={stats?.electricity_pannes ?? '-'} sub={t('dashboard.electricitySector')} icon={Zap} color="amber" />
-      <StatCard label={t('dashboard.sectors')} value={stats?.total_secteurs ?? '-'} sub={t('dashboard.agencyCoverage')} icon={Map} color="blue" />
+      <StatCard label={t('dashboard.sectors')} value={stats?.total_secteurs ?? '-'} sub={t('dashboard.agencyCoverage')} icon={Building2} color="blue" />
       <StatCard label={t('dashboard.totalMeters')} value={stats?.total_compteurs ?? '-'} sub={t('dashboard.meterFleet')} icon={Gauge} color="green" />
       <StatCard label={t('dashboard.waterMeters')} value={stats?.water_compteurs ?? '-'} sub={t('dashboard.waterSubscribers')} icon={Droplets} color="blue" />
       <StatCard label={t('dashboard.electricityMeters')} value={stats?.electricity_compteurs ?? '-'} sub={t('dashboard.electricitySubscribers')} icon={Zap} color="amber" />
@@ -69,8 +67,7 @@ export function RecentPannes({ pannes, title }) {
   );
 }
 
-export function DashboardFrame({ title, subtitle, stats, pannes, secteurs, interventions = [], loading, error, mapTitle, showCharts = true }) {
-  const { t } = useTranslation();
+export function DashboardFrame({ title, subtitle, stats, pannes, interventions = [], loading, error, showCharts = true }) {
   return (
     <div className="w-full min-w-0 space-y-6">
       <div>
@@ -79,14 +76,10 @@ export function DashboardFrame({ title, subtitle, stats, pannes, secteurs, inter
       </div>
       {error && <ErrorState message={error} />}
       {loading ? <SkeletonGrid cards={12} /> : stats && <StatsGrid stats={stats} />}
+      <RecentPannes pannes={pannes} />
       {showCharts && (
         <DashboardCharts pannes={pannes} interventions={interventions} loading={loading} />
       )}
-      <section className="min-w-0 space-y-3">
-        <h3 className="text-sm font-bold tracking-tight text-slate-800">{mapTitle ?? t('dashboard.operationalMap')}</h3>
-        <PanneMap pannes={pannes} sectors={secteurs} height="460px" />
-      </section>
-      <RecentPannes pannes={pannes} />
     </div>
   );
 }

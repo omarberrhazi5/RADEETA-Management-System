@@ -1,7 +1,6 @@
 import { ClipboardCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { endpoints } from '../api/resources';
-import PanneMap from '../components/PanneMap';
 import { ErrorState, LoadingState } from '../components/PageState';
 import StatCard from '../components/ui/StatCard';
 import useResource from '../hooks/useResource';
@@ -31,10 +30,6 @@ export default function OperatorDashboard() {
         <StatCard label={t('dashboard.interventionsInProgress')} value={interventionsInProgress.length} sub={t('dashboard.activeReports')} icon={ClipboardCheck} color="amber" />
         <StatCard label={t('dashboard.completedInterventions')} value={completedInterventions.length} sub={t('dashboard.yourTechnicalReports')} icon={ClipboardCheck} color="green" />
       </div>
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900">{t('dashboard.assignedPannesMap')}</h3>
-        <PanneMap pannes={pannes.items} height="520px" />
-      </section>
       <RecentPannes pannes={pannes.items} title={t('dashboard.myAssignedPannes')} />
     </div>
   );

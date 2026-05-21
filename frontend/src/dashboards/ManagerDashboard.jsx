@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function ManagerDashboard() {
   const { t } = useTranslation();
-  const { stats, pannes, secteurs } = useDashboardData({ includeInterventions: false });
+  const { stats, pannes } = useDashboardData({ includeInterventions: false });
 
   return (
     <DashboardFrame
@@ -12,10 +12,8 @@ export default function ManagerDashboard() {
       stats={stats.data}
       pannes={pannes.items}
       interventions={[]}
-      secteurs={secteurs.items}
-      loading={stats.loading || pannes.loading || secteurs.loading}
-      error={stats.error || pannes.error || secteurs.error}
-      mapTitle={t('dashboard.supervisionMap')}
+      loading={stats.loading || pannes.loading}
+      error={stats.error || pannes.error}
       showCharts={false}
     />
   );

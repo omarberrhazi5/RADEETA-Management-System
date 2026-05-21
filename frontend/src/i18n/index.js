@@ -4,6 +4,8 @@ import { initReactI18next } from 'react-i18next';
 import fr from '../locales/fr.json';
 import en from '../locales/en.json';
 
+const savedLanguage = localStorage.getItem('i18nextLng') || localStorage.getItem('lng') || 'fr';
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -12,13 +14,14 @@ i18n
       fr: { translation: fr },
       en: { translation: en },
     },
+    lng: savedLanguage.startsWith('en') ? 'en' : 'fr',
     fallbackLng: 'fr',
     supportedLngs: ['fr', 'en'],
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage'],
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },

@@ -76,4 +76,25 @@ class AuthController extends Controller
             'deleted' => $deleted,
         ]);
     }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user || ! Hash::check($validated['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        $user->update(['password' => $validated['password']]);
+        ActivityLog::record('Mot de passe modifie', 'Profil', $request, ['actor_user_id' => $user->id]);
+
+        return response()->json(['message' => 'Mot de passe mis à jour avec succès !']);
+    }
 }

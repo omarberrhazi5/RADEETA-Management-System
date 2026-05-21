@@ -9,6 +9,11 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
 
+const sectorNumberOptions = Array.from({ length: 30 }, (_, index) => {
+  const value = String(index + 1);
+  return { value, label: value };
+});
+
 export default function Secteurs() {
   const { t } = useTranslation();
   const { role } = useAuth();
@@ -18,10 +23,24 @@ export default function Secteurs() {
   const [deleting, setDeleting] = useState(false);
 
   const fields = useMemo(() => [
-    { name: 'nom_secteur', label: t('forms.sectorName'), required: true, placeholder: 'Qods 1' },
+    {
+      name: 'num_torne',
+      label: 'Numéro de secteur',
+      type: 'select',
+      required: true,
+      options: sectorNumberOptions,
+      getValue: (item) => String(item.numero_secteur ?? item.num_torne ?? '').replace(/\D/g, '').replace(/^0+/, '') || '',
+    },
+    {
+      name: 'nom_secteur',
+      label: 'Adresse',
+      required: true,
+      placeholder: 'e.g., Province, Ahrache, or EL Moustakbal...',
+      getValue: (item) => item.adresse ?? item.nom_secteur ?? '',
+    },
     {
       name: 'emplacement',
-      label: t('forms.location'),
+      label: 'Location',
       type: 'select',
       required: true,
       defaultValue: 'Taza Haut',
@@ -30,12 +49,17 @@ export default function Secteurs() {
         { value: 'Taza Bas', label: 'Taza Bas' },
       ],
     },
-    { name: 'agence', label: t('forms.agency'), required: true, defaultValue: 'SRM-FM Taza' },
-    { name: 'num_torne', label: 'Numéro de secteur', required: true, placeholder: 'S-001' },
-  ], [t]);
+    { name: 'agence', label: 'Agency', required: true, defaultValue: 'SRM-FM Taza', disabled: true },
+  ], []);
 
   async function saveSector(values) {
-    const payload = { ...values };
+    const payload = {
+      ...values,
+      numero_secteur: values.num_torne,
+      adresse: values.nom_secteur,
+      location: values.emplacement,
+      agency: values.agence,
+    };
 
     if (formState?.item) {
       await api.put(`/secteurs/${formState.item.id_secteur ?? formState.item.id}`, payload);
@@ -70,10 +94,10 @@ export default function Secteurs() {
         onEdit={(item) => setFormState({ item })}
         onDelete={setDeleteTarget}
         columns={[
-          { key: 'nom_secteur', header: t('tables.sector') },
+          { key: 'num_torne', header: 'Numéro de secteur' },
+          { key: 'nom_secteur', header: 'Adresse' },
           { key: 'emplacement', header: t('tables.location') },
           { key: 'agence', header: t('tables.agency') },
-          { key: 'num_torne', header: t('tables.tour') },
         ]}
       />
       {formState && (

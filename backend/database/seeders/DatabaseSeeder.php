@@ -23,7 +23,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $users = $this->seedUsers();
-        $secteurs = $this->seedSecteurs();
+        $this->call(SecteurSeeder::class);
+        $secteurs = Secteur::orderBy('num_torne')->orderBy('nom_secteur')->get();
         $clients = $this->seedClients($secteurs);
         $compteurs = $this->seedCompteurs($clients, $secteurs);
         $this->seedReleves($compteurs, $users['operators']);
@@ -197,6 +198,7 @@ class DatabaseSeeder extends Seeder
             ], [
                 'status' => $resolved ? PanneStatus::Resolved : PanneStatus::Open,
                 'assigned_to' => $operators[$i % $operators->count()]->id,
+                'created_by' => $operators[($i + 1) % $operators->count()]->id,
             ]);
         })->values();
     }

@@ -49,6 +49,10 @@ export default function EntityFormModal({
     return field.getOptions?.(nextValues) ?? field.options;
   }
 
+  function fieldDisabled(field, nextValues = values) {
+    return typeof field.disabled === 'function' ? field.disabled(nextValues) : field.disabled;
+  }
+
   function validateField(field, nextValues = values) {
     return fieldError(nextValues[field.name], {
       required: field.required,
@@ -89,7 +93,7 @@ export default function EntityFormModal({
   }
 
   function focusFirstError(nextErrors) {
-    const firstField = fields.find((field) => nextErrors[field.name] && field.type !== 'hidden' && !field.disabled);
+    const firstField = fields.find((field) => nextErrors[field.name] && field.type !== 'hidden' && !fieldDisabled(field));
     if (!firstField) return;
 
     window.setTimeout(() => {
@@ -136,6 +140,7 @@ export default function EntityFormModal({
         {fields.map((field) => {
           const resolvedType = fieldType(field);
           const resolvedOptions = fieldOptions(field);
+          const resolvedDisabled = fieldDisabled(field);
 
           return resolvedType === 'hidden' ? null : (
             <div key={field.name}>
@@ -153,7 +158,7 @@ export default function EntityFormModal({
                   setTouched((current) => ({ ...current, [field.name]: true }));
                   setErrors((current) => ({ ...current, [field.name]: validateField(field) }));
                 }}
-                disabled={field.disabled}
+                disabled={resolvedDisabled}
                 className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors[field.name] ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
               >
                 <option value="">{field.placeholderKey ? t(field.placeholderKey) : field.placeholder ?? t('common.selectOption')}</option>
@@ -172,7 +177,7 @@ export default function EntityFormModal({
                   setErrors((current) => ({ ...current, [field.name]: validateField(field) }));
                 }}
                 placeholder={field.placeholderKey ? t(field.placeholderKey) : field.placeholder}
-                disabled={field.disabled}
+                disabled={resolvedDisabled}
                 className={`w-full rounded-xl border px-3 py-2 text-sm text-slate-800 outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${errors[field.name] ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
               />
             ) : (
@@ -196,10 +201,10 @@ export default function EntityFormModal({
                 inputMode={field.inputMode}
                 pattern={field.pattern}
                 maxLength={field.maxLength}
-                disabled={field.disabled}
+                disabled={resolvedDisabled}
                 readOnly={field.readOnly}
                 aria-readonly={field.readOnly ? 'true' : undefined}
-                className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${field.disabled || field.readOnly ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'text-slate-800'} ${errors[field.name] ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
+                className={`w-full rounded-xl border px-3 py-2 text-sm outline-none transition duration-300 focus:border-[var(--srm-green)] focus:ring-2 focus:ring-green-100 ${resolvedDisabled || field.readOnly ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'text-slate-800'} ${errors[field.name] ? 'border-red-500 ring-2 ring-red-400/40' : 'border-slate-200'}`}
               />
             )}
 

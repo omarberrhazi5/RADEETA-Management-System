@@ -22,7 +22,7 @@ class PanneController extends Controller
     {
         $limit = min((int) request('limit', 10), 500);
 
-        $query = Panne::with('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')
+        $query = Panne::with('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator', 'createdByUser')
             ->latest();
 
         if ($this->isOperator($request)) {
@@ -78,6 +78,8 @@ class PanneController extends Controller
             $validated['assigned_to'] = $request->user()->id;
         }
 
+        $validated['created_by'] = $request->user()->id;
+
         $this->validateAnomalyMatchesMeter($validated['id_compteur'], $validated['anomalie']);
 
         $priority = $this->interventionPriority($validated);
@@ -90,7 +92,7 @@ class PanneController extends Controller
 
             return $panne;
         });
-        $panne->load('compteur.client', 'compteur.secteur', 'assignedOperator');
+        $panne->load('compteur.client', 'compteur.secteur', 'assignedOperator', 'createdByUser');
 
         if ($panne->assigned_to) {
             $notifications->panneAssigned($panne);
@@ -98,14 +100,14 @@ class PanneController extends Controller
 
         $notifications->anomalyCreated($panne);
 
-        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')))->response()->setStatusCode(201);
+        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator', 'createdByUser')))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, Panne $panne): PanneResource
     {
         $this->authorizeOperatorPanneAccess($request, $panne);
 
-        return new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator'));
+        return new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator', 'createdByUser'));
     }
 
     public function update(Request $request, Panne $panne, NotificationService $notifications): JsonResponse
@@ -154,7 +156,7 @@ class PanneController extends Controller
             $notifications->panneAssigned($panne->refresh());
         }
 
-        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator')))->response();
+        return (new PanneResource($panne->load('compteur.client', 'compteur.secteur', 'reparations.plombier', 'interventions.technician', 'assignedOperator', 'createdByUser')))->response();
     }
 
     public function destroy(Request $request, Panne $panne): JsonResponse

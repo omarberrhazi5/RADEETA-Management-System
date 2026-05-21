@@ -580,6 +580,10 @@
     "loading": "Chargement de la carte...",
     "empty": "Aucune anomalie ou coordonnee de secteur disponible pour la carte.",
     "sector": "Secteur",
-    "openPannesList": "Ouvrir la liste des anomalies"
+    "openPannesList": "Ouvrir la liste des anomalies",
+    "activePannes": "Anomalies actives",
+    "description": "Description",
+    "materials": "Materiels",
+    "viewDetails": "Voir details"
   }
 }

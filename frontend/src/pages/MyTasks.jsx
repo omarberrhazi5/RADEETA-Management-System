@@ -9,7 +9,7 @@ import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
 import useResource from '../hooks/useResource';
-import { translateAnomaly, translateStatus } from '../utils/i18nLabels';
+import { translateAnomaly, translateRole, translateStatus } from '../utils/i18nLabels';
 
 function normalizeStatus(status) {
   if (status === 'terminee') return 'completed';
@@ -25,6 +25,8 @@ function taskFromIntervention(intervention, t) {
   const panne = intervention.panne;
   const meter = intervention.meter ?? panne?.compteur;
   const urgent = ['urgent', 'high'].includes(intervention.priority);
+  const creator = panne?.created_by_user;
+  const creatorName = creator?.name || `${creator?.prenom ?? ''} ${creator?.nom ?? ''}`.trim();
 
   return {
     id: intervention.id,
@@ -38,6 +40,7 @@ function taskFromIntervention(intervention, t) {
     status: normalizeStatus(intervention.status),
     rawStatus: intervention.status,
     technicianId: intervention.technician_id,
+    declaredBy: creatorName ? `${translateRole(t, creator?.role)} - ${creatorName}` : '-',
     icon: Wrench,
   };
 }
@@ -60,6 +63,7 @@ function TaskRow({ task, action }) {
         </div>
         <p className="mt-1 text-sm font-medium text-slate-600">{task.subtitle}</p>
         <p className="mt-1 text-xs font-medium text-slate-500">{task.client} - {task.sector}</p>
+        <p className="mt-1 text-xs font-semibold text-slate-600">Déclaré par: {task.declaredBy}</p>
       </div>
       <div className="flex flex-col gap-2 md:items-end">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-500">

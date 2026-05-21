@@ -29,6 +29,8 @@ class PanneResource extends JsonResource
             'assigned_to' => $this->assigned_to,
             'assigned_technician' => new UserResource($this->whenLoaded('assignedOperator')),
             'assigned_operator' => new UserResource($this->whenLoaded('assignedOperator')),
+            'created_by' => $this->created_by,
+            'created_by_user' => new UserResource($this->whenLoaded('createdByUser')),
             'description' => $this->description,
             'compteur' => new CompteurResource($this->whenLoaded('compteur')),
             'meter' => new CompteurResource($this->whenLoaded('compteur')),

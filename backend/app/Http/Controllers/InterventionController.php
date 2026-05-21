@@ -25,7 +25,7 @@ class InterventionController extends Controller
         abort_unless($policy->viewAny($request->user()), 403, 'Forbidden');
 
         $limit = min((int) $request->integer('limit', 10), 500);
-        $query = Intervention::with('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter.secteur', 'technician')
+        $query = Intervention::with('panne.compteur.client', 'panne.compteur.secteur', 'panne.createdByUser', 'client', 'meter.secteur', 'technician')
             ->latest();
 
         if (OperatorAccess::isOperator($request->user())) {
@@ -74,14 +74,14 @@ class InterventionController extends Controller
         ActivityLog::record('Intervention assignée', 'Interventions', $request, ['intervention_id' => $intervention->id]);
         $notifications->interventionAssigned($intervention);
 
-        return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter.secteur', 'technician')))->response()->setStatusCode(201);
+        return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'panne.createdByUser', 'client', 'meter.secteur', 'technician')))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, Intervention $intervention, InterventionPolicy $policy): InterventionResource
     {
         abort_unless($policy->view($request->user(), $intervention), 403, 'Forbidden');
 
-        return new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter.secteur', 'technician'));
+        return new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'panne.createdByUser', 'client', 'meter.secteur', 'technician'));
     }
 
     public function update(Request $request, Intervention $intervention, InterventionPolicy $policy, NotificationService $notifications): JsonResponse
@@ -126,7 +126,7 @@ class InterventionController extends Controller
             $notifications->repairCompleted($autoRepair);
         }
 
-        return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter.secteur', 'technician')))->response();
+        return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'panne.createdByUser', 'client', 'meter.secteur', 'technician')))->response();
     }
 
     public function assignSelf(Request $request, Intervention $intervention, NotificationService $notifications): JsonResponse
@@ -169,7 +169,7 @@ class InterventionController extends Controller
             $notifications->statusChanged($intervention, $previousStatus, 'en_cours');
         }
 
-        return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'client', 'meter.secteur', 'technician')))->response();
+        return (new InterventionResource($intervention->load('panne.compteur.client', 'panne.compteur.secteur', 'panne.createdByUser', 'client', 'meter.secteur', 'technician')))->response();
     }
 
     public function destroy(Request $request, Intervention $intervention, InterventionPolicy $policy): JsonResponse

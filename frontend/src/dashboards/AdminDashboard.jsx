@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
-  const { interventions, stats, pannes, secteurs } = useDashboardData();
+  const { interventions, stats, pannes } = useDashboardData();
 
   return (
     <DashboardFrame
@@ -12,10 +12,8 @@ export default function AdminDashboard() {
       stats={stats.data}
       pannes={pannes.items}
       interventions={interventions.items}
-      secteurs={secteurs.items}
-      loading={stats.loading || pannes.loading || secteurs.loading || interventions.loading}
-      error={stats.error || pannes.error || secteurs.error || interventions.error}
-      mapTitle={t('dashboard.globalPannesMap')}
+      loading={stats.loading || pannes.loading || interventions.loading}
+      error={stats.error || pannes.error || interventions.error}
     />
   );
 }

@@ -279,7 +279,7 @@ function MeterContextPreview({ meter }) {
   const subscriptionType = client.type_abonnement ?? client.subscription_type ?? client.type_client ?? meter.usage ?? '-';
   const items = [
     { icon: MapPinned, label: 'Secteur', value: sectorName },
-    { icon: Phone, label: 'TÃ©lÃ©phone', value: client.telephone ?? client.phone ?? '-' },
+    { icon: Phone, label: 'T\u00e9l\u00e9phone', value: client.telephone ?? client.phone ?? '-' },
     { icon: Home, label: 'Adresse', value: client.adresse ?? client.address ?? '-' },
     { icon: Tags, label: 'Abonnement', value: subscriptionType },
   ];

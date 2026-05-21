@@ -25,6 +25,7 @@ class Panne extends Model
         'description',
         'status',
         'assigned_to',
+        'created_by',
     ];
 
     protected function casts(): array
@@ -53,6 +54,11 @@ class Panne extends Model
     public function assignedOperator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     protected static function booted(): void

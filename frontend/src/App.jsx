@@ -17,6 +17,7 @@ import Reparations from './pages/Reparations';
 import Administration from './pages/Administration';
 import Reports from './pages/Reports';
 import MyTasks from './pages/MyTasks.jsx';
+import Profile from './pages/Profile.jsx';
 import { ROLES } from './utils/rbac';
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/" element={<Layout />}>
               <Route index element={<RoleRedirect />} />
               <Route path="dashboard" element={<RoleRedirect />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="admin" element={<Navigate to="/access-denied" replace />} />
 
               <Route element={<ProtectedRoute roles={[ROLES.DIRECTEUR]} />}>

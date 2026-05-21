@@ -15,6 +15,7 @@ class UserResource extends JsonResource
             'id_plombier' => $this->id,
             'nom' => $this->nom,
             'prenom' => $this->prenom,
+            'name' => $this->name ?: trim(($this->prenom ?? '').' '.($this->nom ?? '')),
             'identifiant' => $this->identifiant,
             'email' => $this->email,
             'agence' => $this->agence,

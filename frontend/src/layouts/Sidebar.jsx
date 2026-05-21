@@ -108,7 +108,11 @@ export default function Sidebar({ isOpen, onClose }) {
       </nav>
 
       <div className="border-t border-slate-100 p-4">
-        <div className="mb-3 flex items-center gap-3">
+        <NavLink
+          to="/profile"
+          onClick={onClose}
+          className="mb-3 flex items-center gap-3 rounded-2xl p-2 transition duration-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-green-100"
+        >
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--srm-green)] text-xs font-bold text-white shadow-[0_10px_24px_rgb(112_184_48_/_0.18)]">
             {initials}
           </div>
@@ -116,7 +120,7 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="truncate text-sm font-bold tracking-tight text-slate-800">{user?.nom ?? t('tables.user')} {user?.prenom ?? ''}</div>
             <div className="text-xs font-medium text-slate-500">{translateRole(t, role)}</div>
           </div>
-        </div>
+        </NavLink>
         <button type="button" onClick={logout} className="flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-sm font-semibold text-slate-600 transition duration-300 hover:bg-[var(--srm-red-soft)] hover:text-[var(--srm-red)]">
           <LogOut size={16} strokeWidth={1.5} />
           {t('sidebar.logout')}

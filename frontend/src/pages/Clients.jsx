@@ -34,6 +34,12 @@ function generateContractNumber(secteur, existingClients = []) {
   return `${prefix}${randomSixDigits()}`;
 }
 
+function sectorNumber(secteur) {
+  return String(secteur?.numero_secteur ?? secteur?.num_torne ?? '')
+    .replace(/\D/g, '')
+    .replace(/^0+/, '') || '';
+}
+
 export default function Clients() {
   const { t } = useTranslation();
   const { role } = useAuth();
@@ -43,7 +49,11 @@ export default function Clients() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [status, setStatus] = useState('');
-  const defaultSecteur = secteurs.items[0] ?? null;
+  const sectorNumbers = useMemo(() => Array.from(new Set(
+    secteurs.items
+      .map(sectorNumber)
+      .filter((value) => Number(value) >= 1 && Number(value) <= 30),
+  )).sort((a, b) => Number(a) - Number(b)), [secteurs.items]);
 
   const fields = useMemo(() => [
     {
@@ -57,7 +67,7 @@ export default function Clients() {
       numericOnly: true,
       readOnly: true,
       disabled: true,
-      generateDefaultValue: () => generateContractNumber(defaultSecteur, items),
+      generateDefaultValue: () => '',
       getValue: (item) => item.police ?? '',
     },
     { name: 'nom', label: t('forms.lastName'), required: true },
@@ -65,24 +75,45 @@ export default function Clients() {
     { name: 'cin', label: t('forms.cin'), required: true },
     { name: 'telephone', label: t('forms.phone') },
     {
-      name: 'adresse',
-      label: t('forms.address'),
+      name: 'numero_secteur',
+      label: 'Numéro de secteur',
       type: 'select',
       required: true,
-      options: [
-        'Avenue Hassan II',
-        'Rue Allal El Fassi',
-        'Boulevard Mohammed V',
-        'Lotissement Al Qods',
-        'Rue Ibn Khaldoun',
-        'Avenue des FAR',
-        'Quartier Al Amal',
-        'Rue Moulay Rachid',
-        'Hay Ennahda',
-        'Sidi Azouz',
-        'Gare Taza',
-        'Zone Industrielle',
-      ].map((value) => ({ value, label: value })),
+      options: sectorNumbers.map((value) => ({ value, label: value })),
+      getValue: (item) => sectorNumber(item.secteur),
+      populateOnChange: () => ({ id_secteur: '', adresse: '', ...(formState?.item ? {} : { police: '' }) }),
+    },
+    {
+      name: 'id_secteur',
+      label: 'Adresse',
+      type: 'select',
+      required: true,
+      placeholder: "Choisir d'abord le numéro de secteur",
+      disabled: (values) => !values.numero_secteur,
+      getOptions: (values) => secteurs.items
+        .filter((secteur) => sectorNumber(secteur) === String(values.numero_secteur ?? ''))
+        .map((secteur) => ({
+          value: String(secteur.id_secteur ?? secteur.id),
+          label: secteur.adresse ?? secteur.nom_secteur,
+        })),
+      getValue: (item) => String(item.id_secteur ?? item.secteur?.id_secteur ?? item.secteur?.id ?? ''),
+      populateOnChange: (value) => {
+        const selectedSecteur = secteurs.items.find((secteur) => String(secteur.id_secteur ?? secteur.id) === String(value));
+        const nextValues = {
+          adresse: selectedSecteur?.adresse ?? selectedSecteur?.nom_secteur ?? '',
+        };
+
+        if (!formState?.item) {
+          nextValues.police = generateContractNumber(selectedSecteur, items);
+        }
+
+        return nextValues;
+      },
+    },
+    {
+      name: 'adresse',
+      type: 'hidden',
+      getValue: (item) => item.adresse ?? item.secteur?.adresse ?? item.secteur?.nom_secteur ?? '',
     },
     {
       name: 'type_abonnement',
@@ -107,31 +138,20 @@ export default function Clients() {
         { value: 'electricity', label: t('services.electricity') },
       ],
     },
-    {
-      name: 'id_secteur',
-      label: t('forms.sector'),
-      type: 'select',
-      required: true,
-      defaultValue: defaultSecteur ? String(defaultSecteur.id_secteur ?? defaultSecteur.id) : '',
-      options: secteurs.items.map((secteur) => ({
-        value: String(secteur.id_secteur ?? secteur.id),
-        label: `${secteur.nom_secteur} - ${secteur.agence ?? 'SRM-FM'}`,
-      })),
-      getValue: (item) => String(item.id_secteur ?? item.secteur?.id_secteur ?? item.secteur?.id ?? ''),
-      populateOnChange: (value) => {
-        if (formState?.item) return {};
-
-        const selectedSecteur = secteurs.items.find((secteur) => String(secteur.id_secteur ?? secteur.id) === String(value));
-        return { police: generateContractNumber(selectedSecteur, items) };
-      },
-    },
-  ], [defaultSecteur, formState?.item, items, secteurs.items, t]);
+  ], [formState?.item, items, sectorNumbers, secteurs.items, t]);
 
   async function saveClient(values) {
+    const selectedSecteur = secteurs.items.find((secteur) => String(secteur.id_secteur ?? secteur.id) === String(values.id_secteur));
+    const payload = {
+      ...values,
+      adresse: selectedSecteur?.adresse ?? selectedSecteur?.nom_secteur ?? values.adresse,
+    };
+    delete payload.numero_secteur;
+
     if (formState?.item) {
-      await api.put(`/clients/${formState.item.id_client ?? formState.item.id}`, values);
+      await api.put(`/clients/${formState.item.id_client ?? formState.item.id}`, payload);
     } else {
-      await api.post('/clients', values);
+      await api.post('/clients', payload);
     }
     refresh();
   }
